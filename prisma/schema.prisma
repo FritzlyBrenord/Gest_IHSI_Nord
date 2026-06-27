@@ -1,0 +1,364 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Employer {
+  id                    String               @id @default(cuid())
+  firstName             String
+  lastName              String
+  email                 String               @unique
+  phone                 String?
+  poste                 String
+  department            String
+  dateEmbauche          DateTime?
+  isActive              Boolean              @default(true)
+  role                  Role                 @default(EXECUTANT)
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  equipesSupervisees    Equipe[]             @relation("SuperviseurEquipes")
+  equipeMembers         EquipeMember[]
+  meetingsAsReporter    Meeting[]            @relation("ReportResponsible")
+  meetingsAsParticipant MeetingParticipant[]
+  objectivesAssigned    Objective[]          @relation("ObjectiveEmployee")
+  assignedTasks         TeamTask[]           @relation("AssignedTasks")
+  utilisateur           Utilisateur?
+  documents      Document[]
+  documentsReviewed     Document[]          @relation("DocumentReviewedBy")
+  assignedMaterials     Material[]           @relation("EmployeeMaterials")
+  createdInventorySessions InventorySession[] @relation("InventorySessionCreator")
+  inventoryLineChecks    InventoryLine[]     @relation("EmployeeInventoryChecks")
+}
+
+model Utilisateur {
+  id         String    @id @default(cuid())
+  email      String    @unique
+  password   String
+  role       Role      @default(EXECUTANT)
+  photoUrl   String?
+  employerId String    @unique
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  accounts   Account[]
+  sessions   Session[]
+  createdTasks TeamTask[] @relation("CreatedTasks")
+  employer   Employer  @relation(fields: [employerId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id                String      @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              Utilisateur @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String      @id @default(cuid())
+  sessionToken String      @unique
+  userId       String
+  expires      DateTime
+  user         Utilisateur @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Equipe {
+  id                 String         @id @default(cuid())
+  name               String
+  superviseurId      String
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  superviseur        Employer       @relation("SuperviseurEquipes", fields: [superviseurId], references: [id])
+  members            EquipeMember[]
+  objectivesAssigned Objective[]    @relation("ObjectiveEquipe")
+  teamTasks          TeamTask[]
+}
+
+model EquipeMember {
+  id         String   @id @default(cuid())
+  equipeId   String
+  employerId String
+  employer   Employer @relation(fields: [employerId], references: [id], onDelete: Cascade)
+  equipe     Equipe   @relation(fields: [equipeId], references: [id], onDelete: Cascade)
+
+  @@unique([equipeId, employerId])
+}
+
+model Meeting {
+  id                  String               @id @default(cuid())
+  category            String
+  title               String
+  description         String?
+  trainer             String?
+  startAt             DateTime
+  durationMins        Int                  @default(30)
+  type                String
+  location            String?
+  platform            String?
+  meetingUrl          String?
+  status              String               @default("A_VENIR")
+  reportResponsibleId String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  reportResponsible   Employer?            @relation("ReportResponsible", fields: [reportResponsibleId], references: [id])
+  participants        MeetingParticipant[]
+  trainingDocuments   TrainingDocument[]
+  reports             Document[]
+}
+
+model MeetingParticipant {
+  id             String   @id @default(cuid())
+  meetingId      String
+  employeeId     String
+  wasPresent     Boolean  @default(false)
+  attendanceMode String?
+  employee       Employer @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  meeting        Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@unique([meetingId, employeeId])
+}
+
+model TrainingDocument {
+  id         String   @id @default(cuid())
+  meetingId  String
+  key        String
+  url        String
+  name       String
+  mimeType   String
+  size       Int
+  uploadedAt DateTime @default(now())
+  meeting    Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+}
+
+model Objective {
+  id              String      @id @default(cuid())
+  title           String
+  description     String?
+  periodType      String
+  startDate       DateTime
+  endDate         DateTime
+  plans           Json        @default("[]")
+  isEvaluated     Boolean     @default(false)
+  evaluatedAt     DateTime?
+  inheritedFromId String?
+  employeeId      String?
+  equipeId        String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  employee        Employer?   @relation("ObjectiveEmployee", fields: [employeeId], references: [id])
+  equipe          Equipe?     @relation("ObjectiveEquipe", fields: [equipeId], references: [id])
+  inheritedFrom   Objective?  @relation("ObjectiveInheritance", fields: [inheritedFromId], references: [id])
+  children        Objective[] @relation("ObjectiveInheritance")
+}
+
+model Document {
+  id          String   @id @default(cuid())
+  title       String   @db.VarChar(255)
+  type        String   @db.VarChar(50)   // 'letter' | 'compterendu' | 'report'
+  variant     String   @db.VarChar(50)   // 'demande' | 'administrative' | etc.
+  content     String   @db.Text          // Contenu markdown du document
+  preview     String   @db.Text          // Aperçu du document
+  status      String   @default("brouillon") @db.VarChar(50) // 'brouillon' | 'publie' | 'archive'
+  workflowStatus String @default("en_attente") @db.VarChar(50) // 'en_attente' | 'a_corriger' | 'valide'
+  visibility  String   @default("prive") @db.VarChar(50) // 'prive' | 'public'
+  // Métadonnées de l'auteur (lié à Employer via employerId)
+  employerId  String   @db.VarChar(255)  // ID de l'employé qui a créé le document
+  meetingId   String?  @db.VarChar(255)
+  // Champs spécifiques aux lettres (dénormalisés pour faciliter les recherches)
+  recipientName  String? @db.VarChar(255)
+  recipientRole  String? @db.VarChar(255)
+  recipientOrg   String? @db.VarChar(255)
+  senderName     String? @db.VarChar(255)
+  senderAddress  String? @db.Text
+  reviewComment  String? @db.Text
+  reviewedById   String? @db.VarChar(255)
+  // Dates
+  documentDate   DateTime? // Date du document (peut être différente de la création)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  reviewedAt     DateTime?
+  // Versionnement
+  version        Int      @default(1)
+  parentId       String?  @db.VarChar(255) // Pour le versionnement
+  isTemplate     Boolean  @default(false)
+  
+  // Tags et catégorisation
+  tags           String[] @default([])
+  category       String?  @db.VarChar(100)
+  
+  // Métriques
+  viewCount      Int      @default(0)
+  downloadCount  Int      @default(0)
+  
+  // Relations
+  employer       Employer @relation(fields: [employerId], references: [id], onDelete: Cascade)
+  reviewedBy     Employer? @relation("DocumentReviewedBy", fields: [reviewedById], references: [id])
+  meeting       Meeting?  @relation(fields: [meetingId], references: [id], onDelete: SetNull)
+  parent         Document? @relation("DocumentVersions", fields: [parentId], references: [id])
+  versions       Document[] @relation("DocumentVersions")
+
+  @@index([employerId])
+  @@index([meetingId])
+  @@index([type])
+  @@index([status])
+  @@index([workflowStatus])
+  @@index([visibility])
+  @@index([createdAt])
+}
+
+model TeamTask {
+  id                     String    @id @default(cuid())
+  teamId                 String
+  assignedEmployeeId     String
+  createdByManagedUserId String
+  
+  title                  String
+  description            String?
+  dateDebut              DateTime?
+  dateFin                DateTime?
+  priority               String    @default("normale") // haute, normale, basse
+  status                 String    @default("a_faire") // a_faire, en_cours, termine, en_retard
+  
+  employeeNote           String?   @db.Text
+  supervisorNote         String?   @db.Text
+  
+  employeeUpdatedAt      DateTime?
+  supervisorReviewedAt   DateTime?
+  validatedAt            DateTime?
+  isValidated            Boolean   @default(false)
+  
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  team                   Equipe      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  assignedEmployee       Employer    @relation("AssignedTasks", fields: [assignedEmployeeId], references: [id], onDelete: Cascade)
+  createdBy              Utilisateur @relation("CreatedTasks", fields: [createdByManagedUserId], references: [id], onDelete: Cascade)
+  notes                  TeamTaskNote[]
+}
+
+model TeamTaskNote {
+  id        String   @id @default(cuid())
+  taskId    String
+  type      String   // 'EMPLOYEE' ou 'SUPERVISOR'
+  status    String?  
+  note      String?  @db.Text
+  createdAt      DateTime @default(now())
+  task      TeamTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  SUPERVISEUR
+  SECRETAIRE
+  EXECUTANT
+}
+
+enum MaterialCondition {
+  BON_ETAT
+  A_REPARER
+  ENDOMMAGE
+  PERDU
+}
+
+enum InventoryStatus {
+  BROUILLON
+  EN_COURS
+  TERMINE
+  ANNULE
+}
+
+enum InventoryLineStatus {
+  PRESENT
+  ABSENT
+  ENDOMMAGE
+  TRANSFERE
+}
+
+model Material {
+  id            String            @id @default(cuid())
+  name          String
+  category      String
+  inventoryCode String            @unique
+  serialNumber  String?
+  brand         String?
+  model         String?
+  condition     MaterialCondition @default(BON_ETAT)
+  location      String?
+  assignedToId  String?
+  assignedTo    Employer?         @relation("EmployeeMaterials", fields: [assignedToId], references: [id])
+  purchaseDate  DateTime?
+  notes         String?
+  isActive      Boolean           @default(true)
+  deletedAt     DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  inventoryLines InventoryLine[]
+
+  @@index([category])
+  @@index([condition])
+  @@index([deletedAt])
+}
+
+model InventorySession {
+  id          String          @id @default(cuid())
+  title       String
+  description String?
+  status      InventoryStatus @default(BROUILLON)
+  startedAt   DateTime?
+  endedAt     DateTime?
+  createdById String
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  createdBy Employer        @relation("InventorySessionCreator", fields: [createdById], references: [id])
+  lines     InventoryLine[]
+
+  @@index([status])
+  @@index([createdById])
+}
+
+model InventoryLine {
+  id          String              @id @default(cuid())
+  sessionId   String
+  materialId  String
+  status      InventoryLineStatus @default(PRESENT)
+  note        String?
+  checkedAt   DateTime            @default(now())
+  checkedById String?
+
+  session   InventorySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  material  Material         @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  checkedBy Employer?        @relation("EmployeeInventoryChecks", fields: [checkedById], references: [id])
+
+  @@unique([sessionId, materialId])
+  @@index([sessionId])
+  @@index([materialId])
+  @@index([checkedById])
+}
+
+
+
