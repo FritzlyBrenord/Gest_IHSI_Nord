@@ -27,6 +27,9 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { getVariantLabel, DocumentItem, DocumentType, DOCUMENT_TYPES, getDocumentTypeConfig } from "@/types/document";
 import { OfficialHeader, buildOfficialHeaderHtml } from "@/components/documents/official-header";
+import { DocumentImageUpload, type UploadedImage } from "@/components/documents/document-image-upload";
+import { DocumentShareDialog } from "@/components/documents/document-share-dialog";
+import { ProfileResponse } from "@/app/(Backoffice)/profile/page";
 
 // ============================================================
 // TYPES
@@ -44,7 +47,7 @@ interface EventParticipantData {
     id: string;
     firstName: string;
     lastName: string;
-    position: string;
+    poste: string;
     department: string;
   };
 }
@@ -63,7 +66,7 @@ interface EventData {
     id: string;
     firstName: string;
     lastName: string;
-    position: string;
+    poste: string;
     department: string;
   } | null;
   participants: EventParticipantData[];
@@ -139,9 +142,9 @@ const LETTER_VARIANT_GUIDES: Record<string, {
   },
   commerciale: {
     label: "Lettre commerciale",
-    subjectPlaceholder: "Ex: Proposition de partenariat commercial",
+    subjectPlaceholder: "Ex: Proposte de partenariat commercial",
     bodyPlaceholder: "Présentez l'offre, la valeur ajoutée et l'appel à l'action.",
-    hint: "Insistez sur la proposition de valeur et la prochaine étape.",
+    hint: "Insistez sur la proposte de valeur et la prochaine étape.",
     structure: ["Offre", "Avantage", "Bénéfice pour le destinataire", "Appel à l'action"],
     closing: "Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées.",
   },
@@ -151,11 +154,11 @@ const LETTER_VARIANT_GUIDES: Record<string, {
     bodyPlaceholder: "Expliquez le contexte, la relation et les qualités recommandées.",
     hint: "Appuyez votre recommandation par des éléments concrets.",
     structure: ["Relation avec la personne", "Qualités observées", "Contexte", "Recommandation finale"],
-    closing: "Je reste à votre disposition pour toute information complémentaire.",
+    closing: "Je reste à votre disposte pour toute information complémentaire.",
   },
   partenariat: {
     label: "Lettre de partenariat",
-    subjectPlaceholder: "Ex: Proposition de partenariat institutionnel",
+    subjectPlaceholder: "Ex: Proposte de partenariat institutionnel",
     bodyPlaceholder: "Présentez la collaboration proposée et les bénéfices mutuels.",
     hint: "Montez la complémentarité entre les deux parties.",
     structure: ["Contexte", "Objectif du partenariat", "Bénéfices mutuels", "Prochaine étape"],
@@ -454,12 +457,14 @@ interface LetterFormEditorProps {
   content: string;
   onChange: (newContent: string) => void;
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
+  disabled?: boolean;
 }
 
-function LetterFormEditor({ content, onChange, textareaRef }: LetterFormEditorProps) {
+function LetterFormEditor({ content, onChange, textareaRef, disabled = false }: LetterFormEditorProps) {
   const letter = useMemo(() => parseLetterContent(content), [content]);
 
   const updateField = (key: keyof ParsedLetter, value: any) => {
+    if (disabled) return;
     const next = { ...letter };
     if (key === "sender" || key === "recipient" || key === "signature") {
       next[key] = typeof value === "string" ? value.split("\n") : value;
@@ -505,11 +510,11 @@ function LetterFormEditor({ content, onChange, textareaRef }: LetterFormEditorPr
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Expéditeur</label>
-          <Textarea value={letter.sender.join("\n")} onChange={(e) => updateField("sender", e.target.value)} className="min-h-[100px] rounded-xl border-gray-200 text-sm resize-none" placeholder="Nom&#10;Adresse&#10;Tél (optionnel)" />
+          <Textarea value={letter.sender.join("\n")} onChange={(e) => updateField("sender", e.target.value)} className="min-h-25 rounded-xl border-gray-200 text-sm resize-none" placeholder="Nom&#10;Adresse&#10;Tél (optionnel)" />
         </div>
         <div>
           <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Destinataire</label>
-          <Textarea value={letter.recipient.join("\n")} onChange={(e) => updateField("recipient", e.target.value)} className="min-h-[100px] rounded-xl border-gray-200 text-sm resize-none" placeholder="Nom&#10;Fonction&#10;Organisation&#10;Adresse" />
+          <Textarea value={letter.recipient.join("\n")} onChange={(e) => updateField("recipient", e.target.value)} className="min-h-25 rounded-xl border-gray-200 text-sm resize-none" placeholder="Nom&#10;Fonction&#10;Organisation&#10;Adresse" />
         </div>
       </div>
 
@@ -525,17 +530,17 @@ function LetterFormEditor({ content, onChange, textareaRef }: LetterFormEditorPr
 
       <div>
         <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Corps de la lettre (Markdown accepté)</label>
-        <Textarea ref={textareaRef} value={letter.body.join("\n\n")} onChange={(e) => updateField("body", e.target.value)} className="min-h-[220px] rounded-xl border-gray-200 text-sm font-sans leading-relaxed" placeholder="Rédigez le corps de la lettre ici..." />
+        <Textarea ref={textareaRef} value={letter.body.join("\n\n")} onChange={(e) => updateField("body", e.target.value)} className="min-h-55 rounded-xl border-gray-200 text-sm font-sans leading-relaxed" placeholder="Rédigez le corps de la lettre ici..." />
       </div>
 
       <div>
         <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Formule de politesse</label>
-        <Textarea value={letter.closing} onChange={(e) => updateField("closing", e.target.value)} className="min-h-[60px] rounded-xl border-gray-200 text-sm resize-none" />
+        <Textarea value={letter.closing} onChange={(e) => updateField("closing", e.target.value)} className="min-h-15 rounded-xl border-gray-200 text-sm resize-none" />
       </div>
 
       <div>
         <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Signature</label>
-        <Textarea value={letter.signature.join("\n")} onChange={(e) => updateField("signature", e.target.value)} className="min-h-[80px] rounded-xl border-gray-200 text-sm resize-none" placeholder="Nom et fonction du signataire" />
+        <Textarea value={letter.signature.join("\n")} onChange={(e) => updateField("signature", e.target.value)} className="min-h-20 rounded-xl border-gray-200 text-sm resize-none" placeholder="Nom et fonction du signataire" />
       </div>
     </div>
   );
@@ -552,7 +557,7 @@ function LetterPreview({ content }: { content: string }) {
   return (
     <div className="relative mx-auto bg-white shadow-lg border border-gray-200 rounded-sm"
       style={{ width: "612px", minHeight: "792px", padding: "72px", fontFamily: "'Times New Roman', Georgia, serif", fontSize: "12pt", lineHeight: "1.5", textAlign: "justify" }}>
-      {letter.showHeader && <div className="mb-6"><OfficialHeader showRule /></div>}
+      {letter.showHeader && <div className="mb-6"><OfficialHeader /></div>}
 
       <div className="flex items-start justify-between gap-6 mb-10">
         <div className="max-w-[45%] whitespace-pre-line">{letter.sender.join("\n")}</div>
@@ -592,25 +597,71 @@ function LetterPreview({ content }: { content: string }) {
 // USER HOOK
 // ============================================================
 
-interface UserInfo { name: string; role: string; isAdmin: boolean; }
+interface UserInfo { name: string; role: string; poste: string; isAdmin: boolean; }
 
 function useCurrentUser() {
   const { user, isSuperAdmin, isSuperviseur, isLoading } = useAuth();
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [posteFetched, setPosteFetched] = useState(false);
 
   useEffect(() => {
     if (isLoading) return;
     if (!user) {
       setUserInfo(null);
+      setPosteFetched(false);
       return;
     }
     
     const isAdmin = isSuperAdmin || isSuperviseur;
-    setUserInfo(isAdmin 
-      ? { name: "Elson PROPHETE, Ing, Adm", role: "Doctorant en génie des ressources hydriques (ISTEAH)", isAdmin: true }
-      : { name: user.name || 'Utilisateur', role: 'Utilisateur', isAdmin: false }
-    );
-  }, [user, isSuperAdmin, isSuperviseur, isLoading]);
+    
+    // Si admin, utiliser les valeurs fixes
+    if (isAdmin) {
+      setUserInfo({ 
+        name: "Elson PROPHETE, Ing, Adm", 
+        role: "Doctorant en génie des ressources hydriques (ISTEAH)", 
+        poste: "Doctorant en génie des ressources hydriques (ISTEAH)", 
+        isAdmin: true 
+      });
+      return;
+    }
+    
+    // Si user.poste existe, l'utiliser
+    if (user.poste) {
+      setUserInfo({ 
+        name: user.name || 'Utilisateur', 
+        role: user.poste, 
+        poste: user.poste, 
+        isAdmin: false 
+      });
+      return;
+    }
+    
+    // Sinon, récupérer le poste depuis l'API (fallback)
+    if (!posteFetched) {
+      fetch('/api/profile')
+        .then(res => res.json())
+        .then(data => {
+          const poste = data.profile?.employer?.poste || 'Employé';
+          setUserInfo({ 
+            name: user.name || 'Utilisateur', 
+            role: poste, 
+            poste: poste, 
+            isAdmin: false 
+          });
+          setPosteFetched(true);
+        })
+        .catch(err => {
+          console.error('Erreur récupération poste:', err);
+          setUserInfo({ 
+            name: user.name || 'Utilisateur', 
+            role: 'Employé', 
+            poste: 'Employé', 
+            isAdmin: false 
+          });
+          setPosteFetched(true);
+        });
+    }
+  }, [user, isSuperAdmin, isSuperviseur, isLoading, posteFetched]);
 
   return userInfo;
 }
@@ -625,7 +676,7 @@ export function DocumentPages({ content, type, title, showPageNumbers = true, au
 }) {
   const user = useCurrentUser();
   const finalName = authorName || user?.name || "...";
-  const finalPosition = authorPosition || user?.position || "...";
+  const finalPosition = authorPosition || user?.poste || "...";
   if (type === "letter") return <LetterPreview content={content} />;
 
   const { showHeader, strippedContent } = extractHeaderMetadata(content);
@@ -634,36 +685,39 @@ export function DocumentPages({ content, type, title, showPageNumbers = true, au
   return (
     <div className="space-y-6">
       {/* Cover page for special docs */}
-      <div className="relative mx-auto bg-white shadow-lg border border-gray-200 rounded-sm"
+      <div className="relative mx-auto bg-white shadow-lg border border-gray-200 rounded-sm flex flex-col"
         style={{ width: "612px", minHeight: "792px", padding: "72px", fontFamily: "'Times New Roman', Georgia, serif", fontSize: "12pt", lineHeight: "1.5" }}>
-        {showHeader && <div className="mb-6"><OfficialHeader showRule /></div>}
+        {showHeader && <div className="mb-4"><OfficialHeader /></div>}
 
         {isSpecialDoc ? (
-          <div className="flex flex-col items-center justify-between"
-            style={{ minHeight: showHeader ? "548px" : "648px", paddingTop: "60px", paddingBottom: "40px" }}>
+          <>
             <div className="text-center w-full">
-              <h1 className="text-[16pt] font-bold uppercase mb-8" style={{ fontFamily: "'Times New Roman', Georgia, serif" }}>
+              <h1 className="font-bold uppercase mb-6" style={{ fontFamily: "'Times New Roman', Georgia, serif", fontSize: "16pt" }}>
                 {type === "compterendu" ? "COMPTE RENDU DE FORMATION" : "RAPPORT"}
               </h1>
               {title && (
-                <div className="text-[12pt] font-bold text-center mx-auto mb-12 max-w-[80%]">
-                  {title}
+                <div className="font-bold text-center mx-auto mb-8" style={{ fontSize: "13pt", maxWidth: "70%", fontStyle: "italic" }}>
+                  "{title}"
                 </div>
               )}
-              <div className="text-[12pt] font-bold mb-16 text-center">
-                Bureau Nord | {format(new Date(), "d MMMM yyyy", { locale: fr })} |
+              <div className="font-bold text-center" style={{ fontSize: "12pt" }}>
+                Bureau Nord | {format(new Date(), "d MMMM yyyy", { locale: fr })}
               </div>
             </div>
-            <div className="w-full">
-              <div className="mt-20">
-                <div className="font-bold text-[12pt]">Préparé par : {finalName}</div>
-                <div className="text-[11pt] uppercase italic whitespace-pre-line">{finalPosition}</div>
+
+            <div className="flex-1"></div>
+
+            <div className="flex items-start justify-between w-full" style={{ marginTop: "auto" }}>
+              <div>
+                <div className="font-bold" style={{ fontSize: "12pt" }}>Préparé par :</div>
+                <div className="font-bold" style={{ fontSize: "12pt" }}>{finalName}</div>
+                <div className="uppercase italic whitespace-pre-line" style={{ fontSize: "11pt" }}>{finalPosition}</div>
+              </div>
+              <div className="font-bold text-right" style={{ fontSize: "12pt" }}>
+                {format(new Date(), "d MMMM yyyy", { locale: fr })}
               </div>
             </div>
-            <div className="w-full text-right font-bold mt-auto">
-              {format(new Date(), "d MMMM yyyy", { locale: fr })}
-            </div>
-          </div>
+          </>
         ) : (
           <div className="flex flex-col items-center justify-center" style={{ minHeight: "648px" }}>
             <div className="prose prose-gray prose-lg max-w-none text-justify"
@@ -678,18 +732,38 @@ export function DocumentPages({ content, type, title, showPageNumbers = true, au
         )}
       </div>
 
-      <PaginatedContent content={strippedContent} startPageNum={2} showPageNumbers={showPageNumbers} />
+      <PaginatedContent content={strippedContent} startPageNum={2} showPageNumbers={showPageNumbers} type={type} />
     </div>
   );
 }
 
-function PaginatedContent({ content, startPageNum = 1, showPageNumbers = true }: {
-  content: string; startPageNum?: number; showPageNumbers?: boolean;
+function PaginatedContent({ content, startPageNum = 1, showPageNumbers = true, type }: {
+  content: string; startPageNum?: number; showPageNumbers?: boolean; type?: DocumentType;
 }) {
   const pages = useMemo(() => {
     const parts = content.split(/\s*-{2,}PAGE-{2,}\s*|\n?\\newpage\n?/i).map(p => p.trim()).filter(Boolean);
+    
+    // Si pas de délimiteurs et que c'est un document spécial, diviser intelligemment
+    if (parts.length === 1 && (type === "report" || type === "compterendu") && content.length > 2000) {
+      const sections = content.split(/^## /gm);
+      const newPages: string[] = [];
+      let currentPage = "";
+      
+      for (let i = 0; i < sections.length; i++) {
+        const section = i === 0 ? sections[i] : "## " + sections[i];
+        if (currentPage.length + section.length > 2500) {
+          newPages.push(currentPage.trim());
+          currentPage = section;
+        } else {
+          currentPage += (currentPage ? "\n\n" : "") + section;
+        }
+      }
+      if (currentPage.trim()) newPages.push(currentPage.trim());
+      return newPages.length > 0 ? newPages : [content];
+    }
+    
     return parts.length > 0 ? parts : [content];
-  }, [content]);
+  }, [content, type]);
 
   return (
     <div className="space-y-8">
@@ -698,8 +772,8 @@ function PaginatedContent({ content, startPageNum = 1, showPageNumbers = true }:
           style={{ width: "612px", minHeight: "792px", padding: "72px 72px 80px", fontFamily: "'Times New Roman', Georgia, serif", fontSize: "12pt", lineHeight: "1.5", textAlign: "justify", wordBreak: "break-word", overflowWrap: "break-word" }}>
           <div dangerouslySetInnerHTML={{ __html: markdownToBasicHtml(pageContent) }} />
           {showPageNumbers && (
-            <div className="absolute bottom-6 left-0 right-0 text-center text-xs text-gray-400">
-              {startPageNum + index}
+            <div className="absolute left-0 right-0 text-center" style={{ bottom: "24px", fontSize: "10pt", color: "#666" }}>
+              — {startPageNum + index} —
             </div>
           )}
         </div>
@@ -720,6 +794,7 @@ function DashboardView({ onNewDocument, onOpenDocument }: {
   onOpenDocument: (doc: DocumentItem) => void;
 }) {
   const user = useCurrentUser();
+  const { user: authUser } = useAuth();
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -779,7 +854,7 @@ function DashboardView({ onNewDocument, onOpenDocument }: {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-200">
+              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-200">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -787,7 +862,7 @@ function DashboardView({ onNewDocument, onOpenDocument }: {
                 <p className="text-sm text-gray-500 hidden sm:block">Créez vos documents professionnels en quelques secondes.</p>
               </div>
             </div>
-            <Button onClick={onNewDocument} className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-lg shadow-violet-200 rounded-xl px-6" size="lg">
+            <Button onClick={onNewDocument} className="bg-linear-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-lg shadow-violet-200 rounded-xl px-6" size="lg">
               <Plus className="w-4 h-4 mr-2" />Nouveau document
             </Button>
           </div>
@@ -824,7 +899,24 @@ function DashboardView({ onNewDocument, onOpenDocument }: {
                           </div>
                           <div className="min-w-0 flex-1">
                             <CardTitle className="text-sm font-semibold text-gray-900 truncate">{doc.title.length > 30 ? doc.title.substring(0, 30) + '...' : doc.title}</CardTitle>
-                            <TypeBadge type={doc.type} />
+                            <div className="flex items-center gap-2 mt-1">
+                              <TypeBadge type={doc.type} />
+                              {doc.visibility === 'public' && (
+                                <Badge variant="secondary" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                  <Globe className="w-3 h-3 mr-1" />Public
+                                </Badge>
+                              )}
+                              {doc.visibility === 'partage' && doc.employerId !== authUser?.employerId && (
+                                <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                  <Users className="w-3 h-3 mr-1" />Partagé
+                                </Badge>
+                              )}
+                              {doc.accessPermission === 'read' && doc.employerId !== authUser?.employerId && (
+                                <Badge variant="secondary" className="text-xs bg-gray-50 text-gray-600 border-gray-200">
+                                  Lecture seule
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <DropdownMenu>
@@ -861,7 +953,7 @@ function DashboardView({ onNewDocument, onOpenDocument }: {
             <div className="w-20 h-20 rounded-2xl bg-gray-100 flex items-center justify-center mb-6"><FileText className="w-10 h-10 text-gray-300" /></div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucun document créé</h3>
             <p className="text-sm text-gray-500 mb-6 text-center max-w-sm">Commencez par générer votre premier document professionnel.</p>
-            <Button onClick={onNewDocument} className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-lg shadow-violet-200 rounded-xl px-6">
+            <Button onClick={onNewDocument} className="bg-linear-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-lg shadow-violet-200 rounded-xl px-6">
               <Plus className="w-4 h-4 mr-2" />Créer un document
             </Button>
           </motion.div>
@@ -1022,7 +1114,7 @@ function CreateView({ onCancel, onCreated }: { onCancel: () => void; onCreated: 
           </div>
           <div className="mt-3 flex gap-1.5">
             {Array.from({ length: totalSteps }, (_, i) => i + 1).map(s => (
-              <div key={s} className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${s <= step ? "bg-gradient-to-r from-violet-500 to-purple-500" : "bg-gray-200"}`} />
+              <div key={s} className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${s <= step ? "bg-linear-to-r from-violet-500 to-purple-500" : "bg-gray-200"}`} />
             ))}
           </div>
         </div>
@@ -1114,7 +1206,7 @@ function CreateView({ onCancel, onCreated }: { onCancel: () => void; onCreated: 
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">
                         {selectedType === "compterendu" ? "Description courte" : "Description détaillée"}
                       </label>
-                      <Textarea placeholder={selectedType === "compterendu" ? "Brève description du contexte..." : "Décrivez le contexte, les objectifs, les données à inclure..."} value={description} onChange={(e) => setDescription(e.target.value)} className="min-h-[70px] rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white text-base resize-none" />
+                      <Textarea placeholder={selectedType === "compterendu" ? "Brève description du contexte..." : "Décrivez le contexte, les objectifs, les données à inclure..."} value={description} onChange={(e) => setDescription(e.target.value)} className="min-h-17.5 rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white text-base resize-none" />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">Nombre de pages (contenu)</label>
@@ -1138,7 +1230,7 @@ function CreateView({ onCancel, onCreated }: { onCancel: () => void; onCreated: 
                               <div className="w-7 h-7 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center shrink-0 text-xs font-bold mt-1">{i + 1}</div>
                               <div className="flex-1 space-y-2">
                                 <Input placeholder="Titre du point" value={kp.title} onChange={(e) => updateKeyPoint(kp.id, "title", e.target.value)} className="h-10 rounded-lg border-gray-200 bg-white text-sm font-medium" />
-                                <Textarea placeholder="Description (optionnel)" value={kp.description} onChange={(e) => updateKeyPoint(kp.id, "description", e.target.value)} className="min-h-[50px] rounded-lg border-gray-200 bg-white text-sm resize-none" />
+                                <Textarea placeholder="Description (optionnel)" value={kp.description} onChange={(e) => updateKeyPoint(kp.id, "description", e.target.value)} className="min-h-12.5 rounded-lg border-gray-200 bg-white text-sm resize-none" />
                               </div>
                               <Button variant="ghost" size="icon" onClick={() => removeKeyPoint(kp.id)} className="h-8 w-8 rounded-lg text-gray-400 hover:text-red-500 shrink-0"><Minus className="w-4 h-4" /></Button>
                             </div>
@@ -1185,7 +1277,7 @@ function CreateView({ onCancel, onCreated }: { onCancel: () => void; onCreated: 
                           <span className="text-xs text-gray-400">Identité et adresse</span>
                         </div>
                         <Input placeholder="Nom complet de l'expéditeur" value={letterFields.senderName} onChange={(e) => updateLetterField("senderName", e.target.value)} className="h-12 rounded-xl border-gray-200 bg-white text-base" />
-                        <Textarea placeholder="Adresse complète de l'expéditeur" value={letterFields.senderAddress} onChange={(e) => updateLetterField("senderAddress", e.target.value)} className="min-h-[90px] rounded-xl border-gray-200 bg-white text-base resize-none" />
+                        <Textarea placeholder="Adresse complète de l'expéditeur" value={letterFields.senderAddress} onChange={(e) => updateLetterField("senderAddress", e.target.value)} className="min-h-22.5 rounded-xl border-gray-200 bg-white text-base resize-none" />
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <Input placeholder="Téléphone (optionnel)" value={letterFields.senderPhone} onChange={(e) => updateLetterField("senderPhone", e.target.value)} className="h-12 rounded-xl border-gray-200 bg-white text-base" />
                           <Input placeholder="Email (optionnel)" value={letterFields.senderEmail} onChange={(e) => updateLetterField("senderEmail", e.target.value)} className="h-12 rounded-xl border-gray-200 bg-white text-base" />
@@ -1199,7 +1291,7 @@ function CreateView({ onCancel, onCreated }: { onCancel: () => void; onCreated: 
                         <Input placeholder="Nom du destinataire ou service" value={letterFields.recipientName} onChange={(e) => updateLetterField("recipientName", e.target.value)} className="h-12 rounded-xl border-gray-200 bg-white text-base" />
                         <Input placeholder="Fonction / titre du destinataire" value={letterFields.recipientRole} onChange={(e) => updateLetterField("recipientRole", e.target.value)} className="h-12 rounded-xl border-gray-200 bg-white text-base" />
                         <Input placeholder="Organisation / institution destinataire" value={letterFields.recipientOrganization} onChange={(e) => updateLetterField("recipientOrganization", e.target.value)} className="h-12 rounded-xl border-gray-200 bg-white text-base" />
-                        <Textarea placeholder="Adresse complète du destinataire" value={letterFields.recipientAddress} onChange={(e) => updateLetterField("recipientAddress", e.target.value)} className="min-h-[90px] rounded-xl border-gray-200 bg-white text-base resize-none" />
+                        <Textarea placeholder="Adresse complète du destinataire" value={letterFields.recipientAddress} onChange={(e) => updateLetterField("recipientAddress", e.target.value)} className="min-h-22.5 rounded-xl border-gray-200 bg-white text-base resize-none" />
                       </div>
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -1218,15 +1310,15 @@ function CreateView({ onCancel, onCreated }: { onCancel: () => void; onCreated: 
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">Contexte additionnel</label>
-                      <Textarea placeholder="Ajoutez les précisions utiles pour la génération (référence, urgence, ton attendu, pièces jointes, etc.)" value={description} onChange={(e) => setDescription(e.target.value)} className="min-h-[110px] rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white text-base resize-none" />
+                      <Textarea placeholder="Ajoutez les précisions utiles pour la génération (référence, urgence, ton attendu, pièces jointes, etc.)" value={description} onChange={(e) => setDescription(e.target.value)} className="min-h-27.5 rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white text-base resize-none" />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">Corps de la lettre</label>
-                      <Textarea placeholder={selectedLetterGuide?.bodyPlaceholder ?? "Décrivez le contenu de la lettre..."} value={letterFields.body} onChange={(e) => updateLetterField("body", e.target.value)} className="min-h-[180px] rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white text-base resize-none" />
+                      <Textarea placeholder={selectedLetterGuide?.bodyPlaceholder ?? "Décrivez le contenu de la lettre..."} value={letterFields.body} onChange={(e) => updateLetterField("body", e.target.value)} className="min-h-45 rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white text-base resize-none" />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">Nom pour la signature</label>
-                      <Textarea placeholder="Nom et fonction de la personne signataire" value={letterFields.signatureName} onChange={(e) => updateLetterField("signatureName", e.target.value)} className="min-h-[100px] rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white text-base resize-none" />
+                      <Textarea placeholder="Nom et fonction de la personne signataire" value={letterFields.signatureName} onChange={(e) => updateLetterField("signatureName", e.target.value)} className="min-h-25 rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white text-base resize-none" />
                     </div>
                   </div>
                 </>
@@ -1238,7 +1330,7 @@ function CreateView({ onCancel, onCreated }: { onCancel: () => void; onCreated: 
           {step === 4 && (
             <motion.div key="step4" variants={stepVariants} initial="initial" animate="animate" exit="exit">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center"><File className="w-5 h-5 text-violet-600" /></div>
+                <div className="w-10 h-10 rounded-xl bg-linear-to-br from-violet-100 to-purple-100 flex items-center justify-center"><File className="w-5 h-5 text-violet-600" /></div>
                 <div>
                   <h2 className="text-xl font-bold text-gray-900">Plan du document</h2>
                   <p className="text-sm text-gray-500">Vérifiez et modifiez le plan avant la génération.</p>
@@ -1249,7 +1341,7 @@ function CreateView({ onCancel, onCreated }: { onCancel: () => void; onCreated: 
                   <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Plan généré par l&apos;IA</span>
                   <span className="text-xs text-gray-400">Modifiable</span>
                 </div>
-                <Textarea value={planEdited} onChange={(e) => setPlanEdited(e.target.value)} className="min-h-[300px] rounded-lg border-gray-200 bg-white text-sm leading-relaxed resize-none font-mono" placeholder="Le plan apparaîtra ici..." />
+                <Textarea value={planEdited} onChange={(e) => setPlanEdited(e.target.value)} className="min-h-75 rounded-lg border-gray-200 bg-white text-sm leading-relaxed resize-none font-mono" placeholder="Le plan apparaîtra ici..." />
               </div>
             </motion.div>
           )}
@@ -1257,14 +1349,14 @@ function CreateView({ onCancel, onCreated }: { onCancel: () => void; onCreated: 
           {/* STEP 5: Validation */}
           {step === 5 && (
             <motion.div key="step5" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="flex flex-col items-center py-8">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center mb-4">
+              <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-violet-100 to-purple-100 flex items-center justify-center mb-4">
                 <ThumbsUp className="w-8 h-8 text-violet-600" />
               </div>
               <h2 className="text-xl font-bold text-gray-900 mb-2">Valider le plan ?</h2>
               <p className="text-sm text-gray-500 text-center max-w-sm mb-6">
                 L&apos;IA va générer le document en suivant exactement ce plan. Vous pourrez le modifier ensuite.
               </p>
-              <div className="w-full max-w-md p-4 bg-gray-50 rounded-xl border border-gray-200 text-sm text-gray-600 max-h-[200px] overflow-y-auto">
+              <div className="w-full max-w-md p-4 bg-gray-50 rounded-xl border border-gray-200 text-sm text-gray-600 max-h-50 overflow-y-auto">
                 <pre className="whitespace-pre-wrap font-sans">{planEdited}</pre>
               </div>
             </motion.div>
@@ -1275,7 +1367,7 @@ function CreateView({ onCancel, onCreated }: { onCancel: () => void; onCreated: 
             <motion.div key="step6" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="flex flex-col items-center justify-center py-16">
               {isGenerating ? (
                 <>
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center mb-6">
+                  <div className="w-20 h-20 rounded-2xl bg-linear-to-br from-violet-100 to-purple-100 flex items-center justify-center mb-6">
                     <Loader2 className="w-10 h-10 text-violet-600 animate-spin" />
                   </div>
                   <h2 className="text-xl font-bold text-gray-900 mb-2">Génération en cours...</h2>
@@ -1300,7 +1392,7 @@ function CreateView({ onCancel, onCreated }: { onCancel: () => void; onCreated: 
               {step === 1 ? "Annuler" : <><ChevronLeft className="w-4 h-4 mr-1" />Retour</>}
             </Button>
             <Button onClick={handleNext} disabled={!canProceed() || isGeneratingPlan}
-              className={step === 3 ? "bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-lg shadow-violet-200 rounded-xl px-6" : "rounded-xl px-6"}>
+              className={step === 3 ? "bg-linear-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-lg shadow-violet-200 rounded-xl px-6" : "rounded-xl px-6"}>
               {isGeneratingPlan ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Traitement...</> : <>Continuer <ChevronRight className="w-4 h-4 ml-1" /></>}
             </Button>
           </div>
@@ -1308,7 +1400,7 @@ function CreateView({ onCancel, onCreated }: { onCancel: () => void; onCreated: 
         {step === 5 && (
           <div className="flex items-center justify-between mt-8 pt-6 border-t">
             <Button variant="outline" onClick={() => setStep(4)} className="rounded-xl"><ChevronLeft className="w-4 h-4 mr-1" />Modifier le plan</Button>
-            <Button onClick={handleValidateAndGenerate} className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-lg shadow-violet-200 rounded-xl px-6">
+            <Button onClick={handleValidateAndGenerate} className="bg-linear-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-lg shadow-violet-200 rounded-xl px-6">
               <Sparkles className="w-4 h-4 mr-2" />Générer le document
             </Button>
           </div>
@@ -1323,16 +1415,23 @@ function CreateView({ onCancel, onCreated }: { onCancel: () => void; onCreated: 
 // ============================================================
 
 function EditorView({ document: doc, onBack }: { document: DocumentItem; onBack: () => void }) {
-  const user = useCurrentUser();
+  const currentUser = useCurrentUser();
+  const { user: authUser } = useAuth();
   const [currentDoc, setCurrentDoc] = useState<DocumentItem>(doc);
   const [showSource, setShowSource] = useState(false);
   const [showAiPanel, setShowAiPanel] = useState(false);
   const [aiInstruction, setAiInstruction] = useState("");
   const [isAiWorking, setIsAiWorking] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
+  const [employees, setEmployees] = useState<Array<{ id: string; firstName: string; lastName: string; email: string; poste: string }>>([]);
+  const [documentShares, setDocumentShares] = useState<any[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const aiInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  // Vérifier les permissions d'accès
+  const canEdit = currentDoc.employerId === authUser?.employerId || currentDoc.accessPermission === 'write';
+  const isReadOnly = !canEdit;
 
   const headerEnabled = currentDoc.type === "letter"
     ? parseLetterContent(currentDoc.content).showHeader
@@ -1356,6 +1455,26 @@ function EditorView({ document: doc, onBack }: { document: DocumentItem; onBack:
 
   useEffect(() => () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); }, []);
   useEffect(() => { if (showAiPanel) window.setTimeout(() => aiInputRef.current?.focus(), 0); }, [showAiPanel]);
+
+  // Charger les employés pour le partage
+  useEffect(() => {
+    if (showShareDialog) {
+      fetch('/api/employees')
+        .then(res => res.json())
+        .then(data => setEmployees(data.employees || []))
+        .catch(err => console.error('Erreur chargement employés:', err));
+    }
+  }, [showShareDialog]);
+
+  // Charger les partages existants
+  useEffect(() => {
+    if (showShareDialog && currentDoc.id) {
+      fetch(`/api/documents/${currentDoc.id}/shares`)
+        .then(res => res.json())
+        .then(data => setDocumentShares(data.shares || []))
+        .catch(err => console.error('Erreur chargement partages:', err));
+    }
+  }, [showShareDialog, currentDoc.id]);
 
   const insertMarkdown = useCallback((prefix: string, suffix = "") => {
     if (!showSource) { handleContentChange(currentDoc.content + prefix + "texte" + suffix); return; }
@@ -1418,21 +1537,60 @@ function EditorView({ document: doc, onBack }: { document: DocumentItem; onBack:
     } finally { setIsAiWorking(false); }
   };
 
-  const handleImageUpload = useCallback(() => {
-    const input = document.createElement("input");
-    input.type = "file"; input.accept = "image/*";
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        handleContentChange(appendImageMarkdown(currentDoc.content, currentDoc.type, file.name));
-        toast({ title: "Image ajoutée" });
-      };
-      reader.readAsDataURL(file);
-    };
-    input.click();
+  const handleImageUpload = useCallback(async (uploadedImage: UploadedImage) => {
+    const imageMarkdown = `\n![${uploadedImage.name}](${uploadedImage.url})\n`;
+    handleContentChange(currentDoc.content + imageMarkdown);
+    toast({ title: "Image ajoutée", description: uploadedImage.name });
   }, [currentDoc.content, handleContentChange, toast]);
+
+  // Handlers pour le partage
+  const handleVisibilityChange = useCallback(async (visibility: string) => {
+    try {
+      await fetch(`/api/documents/${currentDoc.id}/visibility`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ visibility }),
+      });
+      setCurrentDoc({ ...currentDoc, visibility: visibility as any });
+    } catch (error) {
+      console.error('Erreur mise à jour visibilité:', error);
+      toast({ title: 'Erreur', description: 'Échec de la mise à jour de la visibilité', variant: 'destructive' });
+    }
+  }, [currentDoc, toast]);
+
+  const handleShareAdd = useCallback(async (employeeId: string, permission: string, expiresAt?: string) => {
+    try {
+      const response = await fetch(`/api/documents/${currentDoc.id}/shares`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sharedWithId: employeeId, permission, expiresAt }),
+      });
+      if (!response.ok) throw new Error('Erreur ajout partage');
+      const data = await response.json();
+      setDocumentShares([...documentShares, data.share]);
+      if (currentDoc.visibility !== 'partage') {
+        handleVisibilityChange('partage');
+      }
+    } catch (error) {
+      console.error('Erreur ajout partage:', error);
+      toast({ title: 'Erreur', description: 'Échec de l\'ajout du partage', variant: 'destructive' });
+    }
+  }, [currentDoc.id, currentDoc.visibility, documentShares, handleVisibilityChange, toast]);
+
+  const handleShareRemove = useCallback(async (shareId: string) => {
+    try {
+      await fetch(`/api/documents/${currentDoc.id}/shares/${shareId}`, {
+        method: 'DELETE',
+      });
+      setDocumentShares(documentShares.filter(s => s.id !== shareId));
+      if (documentShares.length === 1) {
+        handleVisibilityChange('prive');
+      }
+    } catch (error) {
+      console.error('Erreur suppression partage:', error);
+      toast({ title: 'Erreur', description: 'Échec de la suppression du partage', variant: 'destructive' });
+    }
+  }, [currentDoc.id, documentShares, handleVisibilityChange, toast]);
 
   const aiSuggestions = [
     "Rends ce document plus professionnel.",
@@ -1461,20 +1619,20 @@ function EditorView({ document: doc, onBack }: { document: DocumentItem; onBack:
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <Button variant="outline" size="sm" onClick={() => setShowAiPanel(!showAiPanel)} className="rounded-lg">
+              <Button variant="outline" size="sm" onClick={() => setShowAiPanel(!showAiPanel)} disabled={isReadOnly} className="rounded-lg">
                 <Sparkles className="w-4 h-4 mr-1.5 text-violet-500" /><span className="hidden sm:inline">Modifier avec IA</span>
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setShowSource(!showSource)} className={`rounded-lg ${showSource ? "bg-violet-50 border-violet-200" : ""}`}>
+              <Button variant="outline" size="sm" onClick={() => setShowSource(!showSource)} disabled={isReadOnly} className={`rounded-lg ${showSource ? "bg-violet-50 border-violet-200" : ""}`}>
                 {showSource ? <><Eye className="w-4 h-4 mr-1.5" /><span className="hidden sm:inline">Aperçu</span></> : <><Code className="w-4 h-4 mr-1.5" /><span className="hidden sm:inline">Source</span></>}
               </Button>
               <div className="hidden sm:flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2">
                 <span className="text-xs text-gray-500">En-tête</span>
-                <Switch checked={headerEnabled} onCheckedChange={() => handleContentChange(toggleDocHeader(currentDoc.content, currentDoc.type))} />
+                <Switch checked={headerEnabled} onCheckedChange={() => handleContentChange(toggleDocHeader(currentDoc.content, currentDoc.type))} disabled={isReadOnly} />
               </div>
-              <Button variant="outline" size="sm" onClick={() => exportToPDF(currentDoc, user)} className="rounded-lg">
+              <Button variant="outline" size="sm" onClick={() => exportToPDF(currentDoc, currentUser)} className="rounded-lg">
                 <Download className="w-4 h-4 mr-1.5" /><span className="hidden sm:inline">PDF</span>
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setShowShareDialog(true)} className="rounded-lg">
+              <Button variant="outline" size="sm" onClick={() => setShowShareDialog(true)} disabled={currentDoc.employerId !== authUser?.employerId} className="rounded-lg">
                 <Share2 className="w-4 h-4" />
               </Button>
             </div>
@@ -1505,32 +1663,36 @@ function EditorView({ document: doc, onBack }: { document: DocumentItem; onBack:
 
       {/* Toolbar */}
       <div className="border-b bg-white px-3 py-2 flex items-center gap-1 overflow-x-auto">
-        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg shrink-0" onClick={() => insertMarkdown("**", "**")} title="Gras"><Bold className="w-4 h-4 text-gray-600" /></Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg shrink-0" onClick={() => insertMarkdown("_", "_")} title="Italique"><Italic className="w-4 h-4 text-gray-600" /></Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg shrink-0" onClick={() => insertMarkdown("\n## ", "\n")} title="Titre"><Heading1 className="w-4 h-4 text-gray-600" /></Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg shrink-0" onClick={() => insertMarkdown("\n- ", "\n")} title="Liste"><List className="w-4 h-4 text-gray-600" /></Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg shrink-0" onClick={() => insertMarkdown("\n| Col 1 | Col 2 |\n|---|---|\n| ", " | |\n")} title="Tableau"><Table className="w-4 h-4 text-gray-600" /></Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg shrink-0" onClick={handleImageUpload} title="Image"><ImageIcon className="w-4 h-4 text-gray-600" /></Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg shrink-0" onClick={() => insertMarkdown("\n> ", "\n")} title="Citation"><Quote className="w-4 h-4 text-gray-600" /></Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg shrink-0" onClick={() => insertMarkdown("**", "**")} disabled={isReadOnly} title="Gras"><Bold className="w-4 h-4 text-gray-600" /></Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg shrink-0" onClick={() => insertMarkdown("_", "_")} disabled={isReadOnly} title="Italique"><Italic className="w-4 h-4 text-gray-600" /></Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg shrink-0" onClick={() => insertMarkdown("\n## ", "\n")} disabled={isReadOnly} title="Titre"><Heading1 className="w-4 h-4 text-gray-600" /></Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg shrink-0" onClick={() => insertMarkdown("\n- ", "\n")} disabled={isReadOnly} title="Liste"><List className="w-4 h-4 text-gray-600" /></Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg shrink-0" onClick={() => insertMarkdown("\n| Col 1 | Col 2 |\n|---|---|\n| ", " | |\n")} disabled={isReadOnly} title="Tableau"><Table className="w-4 h-4 text-gray-600" /></Button>
+        <DocumentImageUpload onImageUploaded={handleImageUpload} disabled={isAiWorking || isReadOnly} />
+        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg shrink-0" onClick={() => insertMarkdown("\n> ", "\n")} disabled={isReadOnly} title="Citation"><Quote className="w-4 h-4 text-gray-600" /></Button>
         <label className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white cursor-pointer">
-          <input type="color" aria-label="Couleur du texte" title="Couleur" className="h-6 w-6 cursor-pointer border-0 bg-transparent p-0"
+          <input type="color" aria-label="Couleur du texte" title="Couleur" className="h-6 w-6 cursor-pointer border-0 bg-transparent p-0" disabled={isReadOnly}
             onChange={(e) => insertMarkdown(`[[color:${e.target.value}]]`, "[[/color]]")} />
         </label>
         <Separator orientation="vertical" className="h-6 mx-1" />
-        <Button variant="ghost" size="sm" onClick={handleImageUpload} className="h-8 rounded-lg text-xs gap-1.5">
-          <FileUp className="w-3.5 h-3.5" /><span className="hidden sm:inline">Image</span>
-        </Button>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-auto py-6"
         onDragOver={(e) => e.preventDefault()}
-        onDrop={(e) => {
+        onDrop={async (e) => {
           e.preventDefault();
           const f = e.dataTransfer.files[0];
           if (f?.type.startsWith("image/")) {
+            // Pour le drag-and-drop, on utilise aussi UploadThing
+            // Pour l'instant, on garde le FileReader comme fallback
             const r = new FileReader();
-            r.onload = () => handleContentChange(appendImageMarkdown(currentDoc.content, currentDoc.type, f.name));
+            r.onload = () => {
+              const base64 = r.result as string;
+              const imageMarkdown = `\n![${f.name}](${base64})\n`;
+              handleContentChange(currentDoc.content + imageMarkdown);
+              toast({ title: "Image ajoutée", description: f.name });
+            };
             r.readAsDataURL(f);
           }
         }}>
@@ -1542,14 +1704,20 @@ function EditorView({ document: doc, onBack }: { document: DocumentItem; onBack:
                 : "Mode source — Code Markdown brut. Cliquez sur \"Aperçu\" pour revenir."}
             </div>
             {currentDoc.type === "letter" ? (
-              <LetterFormEditor content={currentDoc.content} onChange={handleContentChange} textareaRef={textareaRef} />
+              <LetterFormEditor content={currentDoc.content} onChange={handleContentChange} textareaRef={textareaRef} disabled={isReadOnly} />
             ) : (
-              <textarea ref={textareaRef} value={currentDoc.content} onChange={(e) => handleContentChange(e.target.value)}
-                className="w-full min-h-[70vh] p-4 font-mono text-sm text-gray-800 bg-white border rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-violet-300 leading-relaxed" spellCheck={false} />
+              <textarea ref={textareaRef} value={currentDoc.content} onChange={(e) => handleContentChange(e.target.value)} disabled={isReadOnly}
+                className="w-full min-h-[70vh] p-4 font-mono text-sm text-gray-800 bg-white border rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-violet-300 leading-relaxed disabled:bg-gray-50 disabled:text-gray-500" spellCheck={false} />
             )}
           </div>
         ) : (
-          <DocumentPages content={currentDoc.content} type={currentDoc.type} title={currentDoc.title} />
+          <DocumentPages 
+            content={currentDoc.content} 
+            type={currentDoc.type} 
+            title={currentDoc.title} 
+            authorName={currentDoc.employer ? `${currentDoc.employer.firstName} ${currentDoc.employer.lastName}` : undefined}
+            authorPosition={currentDoc.employer?.poste}
+          />
         )}
       </div>
 
@@ -1561,7 +1729,7 @@ function EditorView({ document: doc, onBack }: { document: DocumentItem; onBack:
             <div className="max-w-3xl mx-auto p-4 sm:p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center"><Sparkles className="w-4 h-4 text-white" /></div>
+                  <div className="w-8 h-8 rounded-lg bg-linear-to-br from-violet-500 to-purple-600 flex items-center justify-center"><Sparkles className="w-4 h-4 text-white" /></div>
                   <h3 className="font-semibold text-gray-900">Modifier avec l&apos;IA</h3>
                 </div>
                 <Button variant="ghost" size="icon" onClick={() => setShowAiPanel(false)} className="rounded-lg"><X className="w-4 h-4" /></Button>
@@ -1580,7 +1748,7 @@ function EditorView({ document: doc, onBack }: { document: DocumentItem; onBack:
                     className="pl-10 h-11 rounded-xl border-gray-200" disabled={isAiWorking} />
                 </div>
                 <Button onClick={handleAiModify} disabled={isAiWorking || !aiInstruction.trim()}
-                  className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-xl px-4">
+                  className="bg-linear-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-xl px-4">
                   {isAiWorking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 </Button>
               </div>
@@ -1590,17 +1758,18 @@ function EditorView({ document: doc, onBack }: { document: DocumentItem; onBack:
       </AnimatePresence>
 
       {/* Share Dialog */}
-      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
-        <DialogContent className="rounded-2xl max-w-sm">
-          <DialogHeader><DialogTitle>Partager le document</DialogTitle><DialogDescription>Choisissez comment partager.</DialogDescription></DialogHeader>
-          <div className="space-y-2">
-            <Button variant="outline" className="w-full justify-start rounded-xl h-11" onClick={() => { window.open(`mailto:?subject=${encodeURIComponent(currentDoc.title)}&body=${encodeURIComponent(currentDoc.content)}`); setShowShareDialog(false); }}><Mail className="w-4 h-4 mr-3" />Par email</Button>
-            <Button variant="outline" className="w-full justify-start rounded-xl h-11" onClick={() => { window.open(`https://wa.me/?text=${encodeURIComponent(currentDoc.content)}`); setShowShareDialog(false); }}><MessageSquare className="w-4 h-4 mr-3" />WhatsApp</Button>
-            <Button variant="outline" className="w-full justify-start rounded-xl h-11" onClick={() => { window.open(`https://t.me/share/url?url=&text=${encodeURIComponent(currentDoc.content)}`); setShowShareDialog(false); }}><Send className="w-4 h-4 mr-3" />Telegram</Button>
-            <Button variant="outline" className="w-full justify-start rounded-xl h-11" onClick={async () => { await navigator.clipboard.writeText(currentDoc.content); toast({ title: "Copié" }); setShowShareDialog(false); }}><Copy className="w-4 h-4 mr-3" />Copier le contenu</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <DocumentShareDialog
+        open={showShareDialog}
+        onOpenChange={setShowShareDialog}
+        documentId={currentDoc.id}
+        currentVisibility={currentDoc.visibility || 'prive'}
+        currentShares={documentShares}
+        onVisibilityChange={handleVisibilityChange}
+        onShareAdd={handleShareAdd}
+        onShareRemove={handleShareRemove}
+        employees={employees}
+        currentUserId={authUser?.employerId || ''}
+      />
     </motion.div>
   );
 }
@@ -1617,7 +1786,7 @@ function exportToPDF(doc: DocumentItem, user?: UserInfo | null) {
   const isSpecialDoc = doc.type === "compterendu" || doc.type === "report";
   const dateStr = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
   const coverTitle = doc.type === "compterendu" ? "COMPTE RENDU DE FORMATION" : "RAPPORT";
-  const headerBlockHtml = buildOfficialHeaderHtml({ showRule: true });
+  const headerBlockHtml = buildOfficialHeaderHtml({ showRule: false });
 
   let bodyHtml = "";
 
@@ -1639,18 +1808,21 @@ function exportToPDF(doc: DocumentItem, user?: UserInfo | null) {
     `;
   } else {
     if (isSpecialDoc) {
+      const authorName = doc.employer ? `${doc.employer.firstName} ${doc.employer.lastName}` : "...";
+      const authorPosition = doc.employer?.poste || "...";
       bodyHtml += `
         <div class="cover-page">
           ${showHeader ? headerBlockHtml : ""}
           <div class="cover-center">
             <div style="text-align:center;width:100%;">
               <div style="font-size:16pt;font-weight:bold;text-transform:uppercase;margin-bottom:32pt;">${coverTitle}</div>
-              ${doc.title ? `<div style="font-size:12pt;font-weight:bold;text-align:center;margin:0 auto 48pt auto;max-width:80%;">${escapeHtml(doc.title)}</div>` : ""}
-              <div style="font-size:12pt;font-weight:bold;margin-bottom:64pt;text-align:center;">Bureau Nord | ${dateStr} |</div>
+              ${doc.title ? `<div style="font-size:13pt;font-weight:bold;text-align:center;margin:0 auto 48pt auto;max-width:70%;font-style:italic;">"${escapeHtml(doc.title)}"</div>` : ""}
+              <div style="font-size:12pt;font-weight:bold;margin-bottom:64pt;text-align:center;">Bureau Nord | ${dateStr}</div>
             </div>
             <div style="width:100%;margin-top:80pt;">
-              <div style="font-weight:bold;font-size:12pt;">Préparé par : ${escapeHtml(user?.name || "...")}</div>
-              <div style="font-size:11pt;text-transform:uppercase;font-style:italic;white-space:pre-line;">${escapeHtml(user?.position || "...")}</div>
+              <div style="font-weight:bold;font-size:12pt;">Préparé par :</div>
+              <div style="font-weight:bold;font-size:12pt;">${escapeHtml(authorName)}</div>
+              <div style="font-size:11pt;text-transform:uppercase;font-style:italic;white-space:pre-line;">${escapeHtml(authorPosition)}</div>
             </div>
             <div style="width:100%;text-align:right;font-weight:bold;margin-top:auto;">${dateStr}</div>
           </div>
@@ -1688,7 +1860,7 @@ table { width: 100%; border-collapse: collapse; margin: 12pt 0; page-break-insid
 th { background: #f3f4f6; font-weight: 600; text-align: left; padding: 6pt 8pt; border: 1px solid #d1d5db; font-size: 11pt; }
 td { padding: 6pt 8pt; border: 1px solid #d1d5db; font-size: 11pt; text-align: left; vertical-align: top; }
 img { max-width: 100%; height: auto; display: block; margin: 8pt auto; }
-hr { border: none; border-top: 1px solid #d1d5db; margin: 16pt 0; }
+hr { display: none; }
 a { color: inherit; text-decoration: underline; }
 .page-break { page-break-after: always; break-after: page; display: block; height: 0; overflow: hidden; }
 @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } h1, h2, h3 { page-break-after: avoid; } table, figure { page-break-inside: avoid; } }
@@ -1710,8 +1882,8 @@ function markdownToBasicHtml(md: string): string {
   h = h.replace(/^###### (.+)$/gm, "<h6>$1</h6>");
   h = h.replace(/^##### (.+)$/gm,  "<h5>$1</h5>");
   h = h.replace(/^#### (.+)$/gm,   "<h4>$1</h4>");
-  h = h.replace(/^### (.+)$/gm,    "<h3>$1</h3>");
-  h = h.replace(/^## (.+)$/gm,     "<h2>$1</h2>");
+  h = h.replace(/^### (.+)$/gm,    "<h3 style=\"font-size:13pt;font-weight:bold;margin-top:10pt;margin-bottom:6pt;text-align:left;\">$1</h3>");
+  h = h.replace(/^## (.+)$/gm,     "<h2 style=\"font-size:15pt;font-weight:bold;margin-top:14pt;margin-bottom:6pt;text-align:left;\">$1</h2>");
   h = h.replace(/^# (.+)$/gm,      "<h1>$1</h1>");
   h = h.replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>");
   h = h.replace(/\*\*(.+?)\*\*/g,     "<strong>$1</strong>");
@@ -1724,22 +1896,23 @@ function markdownToBasicHtml(md: string): string {
   h = h.replace(/^[-*] (.+)$/gm, '<li style="text-align:justify;">$1</li>');
   h = h.replace(/(<li[^>]*>.*<\/li>\n?)+/g, (m) => `<ul style="list-style-type:disc;padding-left:20pt;margin-bottom:8pt;">${m}</ul>`);
   h = h.replace(/\|(.+)\|\n\|[-|: ]+\|\n((?:\|.+\|\n?)*)/g, (_, hr: string, br: string) => {
-    const ths = hr.split("|").map((c: string) => `<th style="background:#f9fafb;font-weight:600;padding:6pt;border:1px solid #e5e7eb;">${c.trim()}</th>`).join("");
-    const trs = br.trim().split("\n").map((r: string) =>
-      `<tr>${r.split("|").filter((c: string) => c.trim()).map((c: string) => `<td style="padding:6pt;border:1px solid #e5e7eb;">${c.trim()}</td>`).join("")}</tr>`
+    const ths = hr.split("|").map((c: string) => `<th style="background:#1a1a1a;color:white;font-weight:600;padding:7pt 10pt;font-size:11pt;text-align:left;">${c.trim()}</th>`).join("");
+    const trs = br.trim().split("\n").map((r: string, i: number) =>
+      `<tr style="background:${i % 2 === 0 ? 'transparent' : '#f9fafb'};">${r.split("|").filter((c: string) => c.trim()).map((c: string) => `<td style="padding:6pt 10pt;border:1px solid #d1d5db;font-size:11pt;text-align:left;">${c.trim()}</td>`).join("")}</tr>`
     ).join("");
     return `<table style="width:100%;border-collapse:collapse;margin:12pt 0;"><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
   });
-  h = h.replace(/!\[(.+?)\]\((.+?)\)/g, '<img src="$2" alt="$1" />');
+  h = h.replace(/!\[(.+?)\]\((.+?)\)/g, '<img src="$2" alt="$1" style="max-width:100%;height:auto;display:block;margin:8pt auto;" />');
   h = h.replace(/\[(.+?)\]\((.+?)\)/g,  '<a href="$2">$1</a>');
   h = applyColorSyntax(h);
-  h = h.replace(/^---$/gm, "<hr />");
+  // Suppression de la conversion --- en <hr /> pour éviter les lignes horizontales
+  // h = h.replace(/^---$/gm, "<hr />");
   h = h.split("\n\n").map(b => {
     const t = b.trim();
     if (!t) return "";
     if (t.startsWith("<h") || t.startsWith("<ul") || t.startsWith("<div") ||
         t.startsWith("<table") || t.startsWith("<blockquote") || t.startsWith("<hr") || t.startsWith("<img")) return t;
-    return `<p style="text-align:justify;">${t.replace(/\n/g, "<br />")}</p>`;
+    return `<p style="margin:0 0 8pt 0;text-align:justify;text-justify:inter-word;line-height:1.5;">${t.replace(/\n/g, "<br />")}</p>`;
   }).join("\n");
   return h;
 }
@@ -1813,7 +1986,7 @@ function EventCompteRenduView({
     const rows = eventData.participants.map((p) => {
       const status = participantStatuses[p.id];
       const statusLabel = getStatusLabel(status ?? 'ABSENT');
-      return `| ${p.employee.firstName} ${p.employee.lastName} | ${p.employee.position} | ${p.employee.department} | ${statusLabel} |`;
+      return `| ${p.employee.firstName} ${p.employee.lastName} | ${p.employee.poste} | ${p.employee.department} | ${statusLabel} |`;
     });
     return [
       '| Nom | Poste | Département | Présence |',
@@ -1992,7 +2165,7 @@ function EventCompteRenduView({
       <main className="flex-1 max-w-3xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8 space-y-6">
 
         {/* Bannière événement */}
-        <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50 p-5 shadow-sm">
+        <div className="rounded-2xl border border-emerald-200 bg-linear-to-br from-emerald-50 to-teal-50 p-5 shadow-sm">
           <div className="flex flex-wrap items-start gap-3 mb-3">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 text-emerald-800 px-3 py-1 text-xs font-semibold">
               <ClipboardCheck className="w-3.5 h-3.5" />
@@ -2045,7 +2218,7 @@ function EventCompteRenduView({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Contexte de l'événement, objectifs..."
-              className="min-h-[80px] rounded-xl border-gray-200 bg-gray-50 text-sm resize-none"
+              className="min-h-20 rounded-xl border-gray-200 bg-gray-50 text-sm resize-none"
             />
           </div>
         </div>
@@ -2083,7 +2256,7 @@ function EventCompteRenduView({
                       placeholder="Description (optionnel)"
                       value={kp.description}
                       onChange={(e) => updateKeyPoint(kp.id, 'description', e.target.value)}
-                      className="min-h-[50px] rounded-lg border-gray-200 bg-white text-sm resize-none"
+                      className="min-h-12.5 rounded-lg border-gray-200 bg-white text-sm resize-none"
                     />
                   </div>
                   <Button
@@ -2137,7 +2310,7 @@ function EventCompteRenduView({
                         <p className="text-sm font-medium text-gray-900 truncate">
                           {p.employee.firstName} {p.employee.lastName}
                         </p>
-                        <p className="text-xs text-gray-500 truncate">{p.employee.position}</p>
+                        <p className="text-xs text-gray-500 truncate">{p.employee.poste}</p>
                       </div>
                     </div>
 
@@ -2226,7 +2399,7 @@ function EventCompteRenduView({
           <Button
             onClick={handleGenerate}
             disabled={!canGenerate}
-            className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg rounded-xl px-6"
+            className="bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg rounded-xl px-6"
           >
             {isGenerating ? (
               <>

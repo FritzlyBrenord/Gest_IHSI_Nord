@@ -16,15 +16,34 @@ export async function POST(request: Request) {
     }
 
     const baseInstruction =
-      "Vous êtes un assistant IA expert en rédaction de documents administratifs professionnels en français. " +
-      "Améliorez, corrigez ou modifiez le texte fourni selon les instructions exactes de l'utilisateur. " +
-      "Gardez le même format (Markdown) et ne retournez QUE le texte modifié, sans explications et sans balises de code markdown (```).";
+      "Vous êtes un expert en rédaction de documents administratifs " +
+      "officiels pour l'IHSI (Institut Haïtien de Statistique et " +
+      "d'Informatique), Direction Nord.\n\n" +
+      "Votre rôle est d'appliquer EXACTEMENT l'instruction de l'utilisateur " +
+      "sur le document fourni, tout en préservant :\n" +
+      "- Le format Markdown existant (## pour les titres, ** pour le gras)\n" +
+      "- Les délimiteurs de page ---PAGE--- s'ils existent\n" +
+      "- La structure générale du document (sections, ordre)\n" +
+      "- Le ton formel et institutionnel haïtien\n\n" +
+      "INTERDICTIONS :\n" +
+      "- Ne retournez QUE le texte modifié, sans explications.\n" +
+      "- N'ajoutez pas de balises de code markdown (```).\n" +
+      "- Ne supprimez pas les sections existantes sauf si " +
+      "  l'instruction le demande explicitement.\n" +
+      "- Ne résumez pas le document sauf si l'instruction le demande.\n" +
+      "- Ne changez pas la langue (restez en français formel).";
 
     const prompt = 
-      `Document original (Type: ${type}, Variante: ${variant}, Titre: ${title || "Non spécifié"}):\n\n` +
-      `${content}\n\n` +
+      `Type de document : ${type}\n` +
+      `Variante : ${variant}\n` + 
+      `Titre : ${title || 'Non spécifié'}\n` +
+      `Portée de la modification : ${scope === 'body' ? 
+        'Corps de la lettre uniquement' : 
+        'Document complet'}\n\n` +
+      `CONTENU ORIGINAL À MODIFIER :\n${content}\n\n` +
       `INSTRUCTION DE L'UTILISATEUR :\n${instruction}\n\n` +
-      `Appliquez strictement l'instruction ci-dessus sur le document original et retournez le résultat complet.`;
+      `Appliquez strictement et uniquement l'instruction ci-dessus.\n` +
+      `Retournez le document complet modifié en Markdown.`;
 
     const improvedContent = await generateWithGemini(prompt, baseInstruction);
 

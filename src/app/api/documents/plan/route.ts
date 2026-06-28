@@ -7,16 +7,89 @@ export async function POST(request: Request) {
 
     let prompt = "";
     if (type === "compterendu") {
-      prompt = `Générez un plan détaillé (sommaire) pour un compte rendu de type "${variant}".
-Titre: ${title}
-Description: ${description}
-Points: ${keyPoints?.map((k: any) => k.title).join(", ")}
-Formattez le plan sous forme de liste Markdown simple.`;
+      prompt = `Vous êtes expert en rédaction administrative pour l'IHSI Haïti.
+
+Générez un plan structuré et détaillé pour un compte rendu 
+de type '${variant}'.
+
+INFORMATIONS :
+- Titre : ${title}
+- Contexte : ${description}
+- Points à couvrir : ${keyPoints?.map((k: any) => k.title).join(', ')}
+- Nombre de pages cible : ${pageCount || 2}
+
+FORMAT DE RÉPONSE ATTENDU (liste Markdown) :
+## Plan du compte rendu
+
+1. **Contexte et objectifs**
+   - [sous-point précis lié au contexte fourni]
+   - [sous-point précis]
+
+2. **Déroulement**
+   - [un sous-point par point de la liste fournie]
+
+3. **Résultats et acquis**
+   - [sous-point lié aux résultats attendus]
+
+4. **Recommandations et perspectives**
+   - [actions concrètes à suivre]
+
+5. **Conclusion**
+   - [clôture institutionnelle]
+
+RÈGLES :
+- Chaque sous-point doit être spécifique au contexte fourni.
+- Ne mettez pas de texte générique comme '[contenu]'.
+- Maximum 5 sections principales pour un compte rendu.
+- Répondez UNIQUEMENT avec le plan en Markdown, sans explication.`;
     } else {
-      prompt = `Générez un plan détaillé (sommaire) pour un rapport de type "${variant}".
-Titre: ${title}
-Description: ${description}
-Formattez le plan sous forme de liste Markdown simple avec des titres (##).`;
+      prompt = `Vous êtes expert en rédaction administrative pour l'IHSI Haïti.
+
+Générez un plan structuré et détaillé pour un rapport 
+de type '${variant}'.
+
+INFORMATIONS :
+- Titre : ${title}
+- Description : ${description}
+- Points à traiter : ${keyPoints?.map((k: any) => k.title).join(', ')}
+- Nombre de pages cible : ${pageCount || 5}
+
+FORMAT DE RÉPONSE ATTENDU (Markdown) :
+## Plan du rapport
+
+### Page de couverture
+- Titre, date, auteur, organisation
+
+### Sommaire
+1. Introduction
+2. [Sections selon les points fournis]
+N. Conclusion
+[Annexes si pertinent]
+
+### 1. Introduction
+- Contexte général
+- Objectifs du rapport
+- Méthodologie
+
+### 2. [Section liée au point 1 fourni]
+- [Sous-thème précis]
+- [Sous-thème précis]
+- [Données ou analyses attendues]
+
+[Répéter pour chaque point fourni]
+
+### Conclusion
+- Synthèse
+- Recommandations
+- Perspectives
+
+### Annexes (si pertinent)
+- [Type de contenu annexe]
+
+RÈGLES :
+- Chaque section doit être directement liée aux points fournis.
+- Ne mettez pas de texte générique comme '[contenu]'.
+- Répondez UNIQUEMENT avec le plan en Markdown, sans explication.`;
     }
 
     const content = await generateWithGemini(prompt);

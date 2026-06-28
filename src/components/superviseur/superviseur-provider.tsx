@@ -55,13 +55,12 @@ type SupervisorTeamMember = {
   firstName: string;
   lastName: string;
   email: string;
-  position: string;
+  poste: string;
   department: string;
   isActive: boolean;
   deletedAt: string | null;
   prenom?: string;
   nom?: string;
-  poste?: string;
   statut?: 'actif' | 'inactif';
 };
 
@@ -79,7 +78,7 @@ type SupervisorTeamsResponse = {
     email: string;
     firstName: string;
     lastName: string;
-    position: string;
+    poste: string;
     department: string;
   };
   teams: SupervisorTeam[];
@@ -93,7 +92,7 @@ type ClientMeResponse = {
     employee?: {
       firstName?: string | null;
       lastName?: string | null;
-      position?: string | null;
+      poste?: string | null;
       department?: string | null;
     } | null;
   };
@@ -196,7 +195,7 @@ type TeamTaskApiRecord = {
     firstName: string;
     lastName: string;
     email: string;
-    position: string;
+    poste: string;
     department: string;
     isActive: boolean;
   } | null;
@@ -309,7 +308,7 @@ function mapTeamMember(member: SupervisorTeamMember): MockSupervisorMember {
     id: member.id,
     nom: member.lastName,
     prenom: member.firstName,
-    poste: member.position,
+    poste: member.poste,
     statut: member.isActive && !member.deletedAt ? 'actif' : 'inactif',
     email: member.email,
   };
@@ -468,7 +467,7 @@ export function SuperviseurProvider({ children }: { children: React.ReactNode })
 
         if (cancelled) return;
 
-        const me = { client: user ? { employeeId: user.employerId, email: user.email, employee: { firstName: user.name?.split(' ')[0] || '', lastName: user.name?.split(' ').slice(1).join(' ') || '', position: user.role } } : null };
+        const me = { client: user ? { employeeId: user.employerId, email: user.email, employee: { firstName: user.name?.split(' ')[0] || '', lastName: user.name?.split(' ').slice(1).join(' ') || '', poste: user.role } } : null };
         const eventsResponse = eventsResult.status === 'fulfilled' ? eventsResult.value : { meetings: [] };
         const objectivesResponse = objectivesResult.status === 'fulfilled' ? objectivesResult.value : { objectives: [] };
         const teamResponse = teamResult.status === 'fulfilled' ? teamResult.value : { supervisor: null, teams: [] };
@@ -483,20 +482,20 @@ export function SuperviseurProvider({ children }: { children: React.ReactNode })
         if (supervisor) {
           setSuperviseur((current) => ({
             ...current,
-            id: supervisor.id || client?.employeeId || client?.id || current.id,
+            id: supervisor.id || (client as any)?.employeeId || (client as any)?.id || current.id,
             nom: supervisor.lastName || employee?.lastName || current.nom,
             prenom: supervisor.firstName || employee?.firstName || current.prenom,
             email: supervisor.email || client?.email || current.email,
-            poste: supervisor.position || employee?.position || current.poste,
+            poste: supervisor.poste || employee?.poste || current.poste,
           }));
         } else if (client && employee) {
           setSuperviseur((current) => ({
             ...current,
-            id: client.employeeId || client.id || current.id,
+            id: (client as any)?.employeeId || (client as any)?.id || current.id,
             nom: employee.lastName || current.nom,
             prenom: employee.firstName || current.prenom,
             email: client.email || current.email,
-            poste: employee.position || current.poste,
+            poste: employee.poste || current.poste,
           }));
         }
 

@@ -40,15 +40,26 @@ export async function GET(
     const employerId = session.user.employerId;
     const isAdmin = ['ADMIN', 'SUPER_ADMIN', 'SUPERVISEUR', 'SECRETAIRE'].includes(session.user.role);
     
+    // Vérifier si le document est partagé avec l'utilisateur
+    const share = await (prisma as any).documentShare.findUnique({
+      where: {
+        documentId_sharedWithId: {
+          documentId: documentId,
+          sharedWithId: employerId,
+        },
+      },
+    });
+
     console.log('Document Auth Check:', { 
       docId: documentId, 
       docEmployerId: document.employerId, 
       sessionEmployerId: employerId, 
       role: session.user.role, 
-      visibility: document.visibility 
+      visibility: document.visibility,
+      hasShare: !!share
     });
 
-    if (document.employerId !== employerId && !isAdmin && document.visibility !== 'public') {
+    if (document.employerId !== employerId && !isAdmin && document.visibility !== 'public' && !share) {
       return NextResponse.json({ error: 'Accès non autorisé à ce document' }, { status: 403 });
     }
 
@@ -69,7 +80,7 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();

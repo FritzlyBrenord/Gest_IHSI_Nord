@@ -87,15 +87,16 @@ export async function duplicateDocument(id: string): Promise<DocumentItem | null
     if (!doc) return null;
 
     const duplicateData: DocumentCreatePayload = {
-      ...doc,
-      title: `${doc.title} (copie)`
+      title: `${doc.title} (copie)`,
+      type: doc.type,
+      variant: doc.variant,
+      content: doc.content,
+      preview: doc.preview,
+      workflowStatus: doc.workflowStatus,
+      visibility: doc.visibility,
+      meetingId: doc.meetingId,
+      reviewComment: doc.reviewComment,
     };
-
-    delete duplicateData.id;
-    delete duplicateData.createdAt;
-    delete duplicateData.updatedAt;
-    delete duplicateData.employerId;
-    delete duplicateData.employer;
 
     return await createDocument(duplicateData);
   } catch (error) {

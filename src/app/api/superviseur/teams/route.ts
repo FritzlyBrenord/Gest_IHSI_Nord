@@ -17,7 +17,7 @@ export async function GET() {
       email: session.user.email,
       firstName: 'Super',
       lastName: 'Admin',
-      position: 'Direction',
+      poste: 'Direction',
       department: 'Direction Générale'
     } : {
       id: session.user.id,
@@ -25,7 +25,7 @@ export async function GET() {
       email: session.user.email,
       firstName: session.user.name?.split(' ')[0] || '',
       lastName: session.user.name?.split(' ').slice(1).join(' ') || '',
-      position: session.user.role,
+      poste: session.user.role,
       department: ''
     };
 
@@ -51,7 +51,7 @@ export async function GET() {
         firstName: team.superviseur.firstName,
         lastName: team.superviseur.lastName,
         email: team.superviseur.email,
-        position: team.superviseur.poste,
+        poste: team.superviseur.poste,
         department: team.superviseur.department,
         isActive: team.superviseur.isActive,
         deletedAt: null
@@ -61,7 +61,7 @@ export async function GET() {
         firstName: m.employer.firstName,
         lastName: m.employer.lastName,
         email: m.employer.email,
-        position: m.employer.poste,
+        poste: m.employer.poste,
         department: m.employer.department,
         isActive: m.employer.isActive,
         deletedAt: null

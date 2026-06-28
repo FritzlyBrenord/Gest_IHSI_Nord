@@ -20,6 +20,15 @@ export const ourFileRouter = {
     .onUploadComplete(async ({ file }) => {
       return { url: file.url, key: file.key, name: file.name, size: file.size };
     }),
+  documentImageUploader: f({
+    image: { maxFileSize: '8MB', maxFileCount: 5 },
+  })
+    .middleware(async () => {
+      return {};
+    })
+    .onUploadComplete(async ({ file }) => {
+      return { url: file.url, key: file.key, name: file.name, size: file.size };
+    }),
 } satisfies FileRouter;
 
 export type OurFileRouter = typeof ourFileRouter;

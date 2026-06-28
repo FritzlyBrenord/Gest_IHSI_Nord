@@ -10,7 +10,7 @@ interface EmployeePreview {
   email: string;
   firstName: string;
   lastName: string;
-  position: string;
+  poste: string;
   department: string;
 }
 
@@ -159,7 +159,7 @@ export default function ClientRegisterPage() {
                     {employee?.firstName} {employee?.lastName}
                   </p>
                   <p className="text-xs font-light text-[#7aadde]">
-                    {employee?.position} — {employee?.department}
+                    {employee?.poste} — {employee?.department}
                   </p>
                 </div>
               </div>

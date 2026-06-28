@@ -55,7 +55,7 @@ export async function GET() {
         id: m.reportResponsible.id,
         firstName: m.reportResponsible.firstName,
         lastName: m.reportResponsible.lastName,
-        position: m.reportResponsible.poste,
+        poste: m.reportResponsible.poste,
         department: m.reportResponsible.department,
       } : null,
       participants: m.participants.map(p => ({
@@ -67,7 +67,7 @@ export async function GET() {
           id: p.employee.id,
           firstName: p.employee.firstName,
           lastName: p.employee.lastName,
-          position: p.employee.poste,
+          poste: p.employee.poste,
         }
       })),
       trainingDocuments: m.trainingDocuments,

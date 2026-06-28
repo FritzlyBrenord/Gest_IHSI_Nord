@@ -23,12 +23,33 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20');
     const skip = (page - 1) * limit;
 
-    const where: Prisma.DocumentWhereInput = employerId === 'super-admin-id' ? {} : { employerId };
+    // Récupérer les documents accessibles : créés par l'utilisateur, publics, ou partagés
+    const where: Prisma.DocumentWhereInput = employerId === 'super-admin-id' ? {} : {
+      OR: [
+        // Documents créés par l'utilisateur
+        { employerId },
+        // Documents publics
+        { visibility: 'public' },
+        // Documents partagés avec l'utilisateur
+        {
+          shares: {
+            some: {
+              sharedWithId: employerId,
+              OR: [
+                { expiresAt: null },
+                { expiresAt: { gte: new Date() } },
+              ],
+            },
+          },
+        },
+      ],
+    };
 
     if (type) where.type = type;
     if (status) where.status = status;
     if (search) {
       where.OR = [
+        ...(Array.isArray(where.OR) ? where.OR : []),
         { title: { contains: search, mode: 'insensitive' } },
         { preview: { contains: search, mode: 'insensitive' } },
         { variant: { contains: search, mode: 'insensitive' } }
@@ -49,14 +70,32 @@ export async function GET(req: NextRequest) {
               poste: true,
               department: true
             }
-          }
+          },
+          shares: {
+            where: {
+              sharedWithId: employerId,
+            },
+            select: {
+              permission: true,
+            },
+          },
         }
       }),
       prisma.document.count({ where })
     ]);
 
+    // Ajouter la permission d'accès à chaque document
+    const documentsWithAccess = documents.map((doc) => ({
+      ...doc,
+      accessPermission: doc.employerId === employerId 
+        ? 'write' 
+        : doc.visibility === 'public' 
+          ? 'read' 
+          : doc.shares[0]?.permission || 'read',
+    }));
+
     return NextResponse.json({
-      documents,
+      documents: documentsWithAccess,
       pagination: {
         total,
         page,

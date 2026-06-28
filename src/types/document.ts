@@ -1,4 +1,6 @@
-﻿export type DocumentType = "letter" | "compterendu" | "report";
+export type DocumentType = "letter" | "compterendu" | "report";
+export type DocumentVisibility = "prive" | "public" | "partage";
+export type DocumentPermission = "read" | "write";
 
 export interface DocumentItem {
   id: string;
@@ -8,13 +10,45 @@ export interface DocumentItem {
   content: string;
   preview: string;
   workflowStatus?: 'en_attente' | 'a_corriger' | 'valide';
-  visibility?: 'prive' | 'public';
+  visibility?: DocumentVisibility;
   meetingId?: string | null;
   reviewComment?: string | null;
   reviewedById?: string | null;
   reviewedAt?: string | null;
   createdAt: string;
   updatedAt: string;
+  employerId?: string;
+  employer?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    poste?: string;
+  };
+  shares?: DocumentShare[];
+  accessPermission?: 'read' | 'write';
+}
+
+export interface DocumentShare {
+  id: string;
+  documentId: string;
+  sharedWithId: string;
+  sharedById: string;
+  permission: DocumentPermission;
+  sharedAt: string;
+  expiresAt?: string | null;
+  sharedWith?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    poste: string;
+  };
+  sharedBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
 }
 
 export interface DocumentVariant {

@@ -114,7 +114,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           firstName: updatedTask.assignedEmployee.firstName,
           lastName: updatedTask.assignedEmployee.lastName,
           email: updatedTask.assignedEmployee.email,
-          position: updatedTask.assignedEmployee.poste,
+          poste: updatedTask.assignedEmployee.poste,
           department: updatedTask.assignedEmployee.department,
           isActive: updatedTask.assignedEmployee.isActive
         }

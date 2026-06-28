@@ -30,7 +30,7 @@ function ShareMenu({ onShare }: { onShare: (m: 'whatsapp' | 'email' | 'native') 
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-1 z-20 bg-white border border-gray-200 rounded-xl shadow-lg p-1 min-w-[180px]">
+          <div className="absolute right-0 top-full mt-1 z-20 bg-white border border-gray-200 rounded-xl shadow-lg p-1 min-w-45">
             <button
               onClick={() => { setOpen(false); onShare('whatsapp'); }}
               className="flex items-center gap-2 w-full px-3 py-2 text-sm rounded-lg hover:bg-green-50 text-green-700"

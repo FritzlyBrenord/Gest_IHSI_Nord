@@ -77,11 +77,9 @@ export async function POST(req: Request) {
     let errors: string[] = [];
 
     const dateObj = new Date(startAt);
-    const dateStr = dateObj.toLocaleDateString('fr-FR');
-    const timeStr = dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
     const emailDetails = {
-      title, dateStr, timeStr, mode: type, location, platform, meetingUrl
+      title, startAt: dateObj, durationMins, type, location, platform, meetingUrl
     };
 
     meeting.participants.forEach(p => {
@@ -158,7 +156,7 @@ export async function GET() {
         id: m.reportResponsible.id,
         firstName: m.reportResponsible.firstName,
         lastName: m.reportResponsible.lastName,
-        position: m.reportResponsible.poste,
+        poste: m.reportResponsible.poste,
         department: m.reportResponsible.department,
       } : null,
       participants: m.participants.map(p => ({
@@ -170,7 +168,7 @@ export async function GET() {
           id: p.employee.id,
           firstName: p.employee.firstName,
           lastName: p.employee.lastName,
-          position: p.employee.poste,
+          poste: p.employee.poste,
         }
       })),
       reports: m.reports,

@@ -23,7 +23,7 @@ interface Employee {
   lastName: string;
   email: string;
   phone: string | null;
-  position: string;
+  poste: string;
   department: string;
   hireDate: string | null;
   photoUrl: string | null;
@@ -187,7 +187,7 @@ function PrintableEmployeeDossier({
               {employee.firstName} {employee.lastName}
             </p>
             <p style={{ fontSize: 13, color: '#15803d', marginBottom: 12 }}>
-              {employee.position} — {employee.department}
+              {employee.poste} — {employee.department}
             </p>
 
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
@@ -423,7 +423,7 @@ function printEmployeeDossier(employee: Employee, includeFullDossier: boolean) {
           </div>
           <div style="flex:1;">
             <p style="font-size:20px;font-weight:700;margin-bottom:4px;">${employee.firstName} ${employee.lastName}</p>
-            <p style="font-size:13px;color:#15803d;margin-bottom:12px;">${employee.position} — ${employee.department}</p>
+            <p style="font-size:13px;color:#15803d;margin-bottom:12px;">${employee.poste} — ${employee.department}</p>
             <table style="width:100%;border-collapse:collapse;font-size:12px;">
               <tbody>
                 ${[
@@ -598,7 +598,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
     lastName: '',
     email: '',
     phone: '+509',
-    position: '',
+    poste: '',
     department: '',
     hireDate: '',
     isActive: true,
@@ -623,7 +623,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
           lastName: data.employee.lastName,
           email: data.employee.email,
           phone: data.employee.phone || '+509',
-          position: data.employee.position,
+          poste: data.employee.poste,
           department: data.employee.department,
           hireDate: toDateInputValue(data.employee.hireDate),
           isActive: data.employee.isActive,
@@ -742,7 +742,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
           </Link>
           <div>
             <h1 className="text-2xl font-bold">{employee.firstName} {employee.lastName}</h1>
-            <p className="text-sm text-muted-foreground">{employee.position} · {employee.department}</p>
+            <p className="text-sm text-muted-foreground">{employee.poste} · {employee.department}</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -781,7 +781,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-1">
         {/* Edit Form */}
         <Card className="lg:col-span-2">
           <CardHeader>
@@ -828,7 +828,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
               </div>
               <div className="space-y-2">
                 <Label>Poste *</Label>
-                <Input value={formData.position} onChange={(e) => setFormData({ ...formData, position: e.target.value })} />
+                <Input value={formData.poste} onChange={(e) => setFormData({ ...formData, poste: e.target.value })} />
               </div>
               <div className="space-y-2">
                 <Label>Département *</Label>
@@ -864,7 +864,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
           </CardContent>
         </Card>
 
-        {/* Sidebar - Recent Activity */}
+        {/* Sidebar - Recent Activity
         <div className="space-y-4">
           <Card>
             <CardHeader>
@@ -933,7 +933,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
               </div>
             </CardContent>
           </Card>
-        </div>
+        </div> */}
       </div>
     </div>
   );

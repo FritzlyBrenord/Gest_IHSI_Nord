@@ -55,7 +55,7 @@ type EmployeeOption = {
   firstName: string;
   lastName: string;
   email: string;
-  position: string;
+  poste: string;
   department: string;
   isActive: boolean;
   userRole: UserRole | null;
@@ -113,7 +113,7 @@ function employeeName(employee: EmployeeOption) {
 function employeeMatches(employee: EmployeeOption, search: string) {
   const value = search.trim().toLowerCase();
   if (!value) return true;
-  return [employee.firstName, employee.lastName, employee.email, employee.position, employee.department]
+  return [employee.firstName, employee.lastName, employee.email, employee.poste, employee.department]
     .join(' ')
     .toLowerCase()
     .includes(value);
@@ -159,7 +159,7 @@ function EmployeePicker({
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-emerald-900">{employeeName(selected)}</p>
-              <p className="text-xs text-emerald-700">{selected.position} · {selected.department}</p>
+              <p className="text-xs text-emerald-700">{selected.poste} · {selected.department}</p>
             </div>
             <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
               <Check className="h-3 w-3 mr-1" /> Sélectionné
@@ -342,7 +342,7 @@ export default function UsersPage() {
       const matchesSearch = !value || [
         employeeName(user.employee),
         user.employee.email,
-        user.employee.position,
+        user.employee.poste,
         user.employee.department,
         ROLE_LABELS[user.role],
         ...user.teams.map((team) => team.name)
@@ -980,7 +980,7 @@ export default function UsersPage() {
                     <div>
                       <p className="font-semibold">{selectedEmployee ? employeeName(selectedEmployee) : 'Aucun employé'}</p>
                       <p className="text-sm text-muted-foreground">
-                        {selectedEmployee?.position || 'Position inconnue'} · {selectedEmployee?.department || 'Département inconnu'}
+                        {selectedEmployee?.poste || 'poste inconnue'} · {selectedEmployee?.department || 'Département inconnu'}
                       </p>
                     </div>
                     {selectedEmployee && (
@@ -1138,7 +1138,7 @@ export default function UsersPage() {
                                 <ArrowLeft className="h-4 w-4 text-red-400 shrink-0" />
                                 <span className="text-right truncate">
                                   <span className="block font-medium">{employeeName(employee)}</span>
-                                  <span className="text-xs text-muted-foreground">{employee.position}</span>
+                                  <span className="text-xs text-muted-foreground">{employee.poste}</span>
                                 </span>
                               </button>
                             ))
@@ -1234,7 +1234,7 @@ export default function UsersPage() {
                   <div className="mt-3 space-y-1 text-sm">
                     <p className="flex items-center gap-2">
                       <Briefcase className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-muted-foreground">Poste:</span> {detailsUser.employee.position}
+                      <span className="text-muted-foreground">Poste:</span> {detailsUser.employee.poste}
                     </p>
                     <p className="flex items-center gap-2">
                       <Building2 className="h-3 w-3 text-muted-foreground" />
@@ -1336,7 +1336,7 @@ export default function UsersPage() {
                             </div>
                             <div>
                               <p className="font-medium">{employeeName(member)}</p>
-                              <p className="text-xs text-muted-foreground">{member.position}</p>
+                              <p className="text-xs text-muted-foreground">{member.poste}</p>
                             </div>
                           </div>
                           <Badge variant="outline" className="text-xs">{member.department}</Badge>

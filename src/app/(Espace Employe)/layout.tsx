@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { BookOpen, ClipboardList, Home, LogOut, Menu, QrCode, X , PencilSparkles} from "lucide-react";
 import { useAuth } from "@/hook/useAuth";
+import { IHSILoader } from "@/components/ui/ihsi-loader";
 
 const navItems = [
   { href: '/home', label: 'Accueil', icon: Home },
@@ -88,11 +89,7 @@ export default function EmployeLayout({
   };
 
   if (isLoading || !isAuthenticated) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-white text-sm text-slate-500">
-        Vérification de la session...
-      </div>
-    );
+    return <IHSILoader />;
   }
 
   const avatarSrc = profilePhoto || user?.photoUrl || undefined;

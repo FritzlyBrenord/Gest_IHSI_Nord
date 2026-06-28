@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 
-type ProfileResponse = {
+export type ProfileResponse = {
   profile: {
     id: string;
     email: string;
@@ -26,7 +26,7 @@ type ProfileResponse = {
       id: string;
       firstName: string;
       lastName: string;
-      position: string;
+      poste: string;
       department: string;
       email: string;
       isActive: boolean;
@@ -184,7 +184,7 @@ export default function ProfilePage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2"><Label>Prénom</Label><Input value={employerInfo.firstName} readOnly /></div>
                 <div className="space-y-2"><Label>Nom</Label><Input value={employerInfo.lastName} readOnly /></div>
-                <div className="space-y-2"><Label>Poste</Label><Input value={employerInfo.position} readOnly /></div>
+                <div className="space-y-2"><Label>Poste</Label><Input value={employerInfo.poste} readOnly /></div>
                 <div className="space-y-2"><Label>Département</Label><Input value={employerInfo.department} readOnly /></div>
                 <div className="space-y-2 sm:col-span-2"><Label>Email employé</Label><Input value={employerInfo.email} readOnly /></div>
               </div>
