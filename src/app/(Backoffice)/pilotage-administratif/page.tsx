@@ -100,7 +100,7 @@ type DashboardStats = {
 type DashboardDataState = {
   employeesAvailable: boolean;
   meetingsAvailable: boolean;
-  objectivesAvailable?:boolean;
+  objectivesAvailable: boolean;
   message: string | null;
 };
 
@@ -418,6 +418,7 @@ export default function AdminDashboardPage() {
         setDataState({
           employeesAvailable,
           meetingsAvailable,
+          objectivesAvailable,
           message: failedReasons[0] || null,
         });
       } catch (error) {
@@ -425,6 +426,7 @@ export default function AdminDashboardPage() {
         setDataState({
           employeesAvailable: false,
           meetingsAvailable: false,
+          objectivesAvailable: false,
           message: error instanceof Error ? error.message : 'Impossible de charger les données du tableau de bord.',
         });
       } finally {
@@ -450,7 +452,7 @@ export default function AdminDashboardPage() {
       subtitle: `${stats?.objectivesThisWeek ?? 0} objectif(s) sur la semaine`,
       icon: Target,
       accentClassName: 'bg-amber-50 text-amber-700',
-      available: dataState.meetingsAvailable,
+      available: dataState.objectivesAvailable,
     },
     {
       title: 'Formations prévues',
@@ -468,7 +470,7 @@ export default function AdminDashboardPage() {
       accentClassName: 'bg-orange-50 text-orange-700',
       available: dataState.meetingsAvailable,
     },
-  ]), [stats, dataState.employeesAvailable, dataState.meetingsAvailable]);
+  ]), [stats, dataState.employeesAvailable, dataState.meetingsAvailable, dataState.objectivesAvailable]);
 
   const currentWeekObjectiveCount = useMemo(
     () => highlights.latestWeeklyObjective ? getCurrentWeekObjectiveCount(highlights.latestWeeklyObjective, new Date()) : 0,
