@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo, useRef, useSyncExternalStore } from "react";
+import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import {
   Plus, Search, FileText, Mail, ClipboardList, ChevronRight, ChevronLeft,
@@ -71,6 +72,7 @@ interface EventData {
   } | null;
   participants: EventParticipantData[];
   status: string;
+  existingDocument?: DocumentItem;
 }
 
 type HybridStatus = 'PRESENTIEL' | 'EN_LIGNE' | 'ABSENT';
@@ -693,7 +695,7 @@ export function DocumentPages({ content, type, title, showPageNumbers = true, au
           <>
             <div className="text-center w-full">
               <h1 className="font-bold uppercase mb-6" style={{ fontFamily: "'Times New Roman', Georgia, serif", fontSize: "16pt" }}>
-                {type === "compterendu" ? "COMPTE RENDU DE FORMATION" : "RAPPORT"}
+                {type === "compterendu" ? "COMPTE RENDU DE FORMATION " : "RAPPORT"}
               </h1>
               {title && (
                 <div className="font-bold text-center mx-auto mb-8" style={{ fontSize: "13pt", maxWidth: "70%", fontStyle: "italic" }}>
@@ -1414,7 +1416,7 @@ function CreateView({ onCancel, onCreated }: { onCancel: () => void; onCreated: 
 // EDITOR VIEW
 // ============================================================
 
-function EditorView({ document: doc, onBack }: { document: DocumentItem; onBack: () => void }) {
+function EditorView({ document: doc, onBack, backUrl }: { document: DocumentItem; onBack: () => void; backUrl?: string | null }) {
   const currentUser = useCurrentUser();
   const { user: authUser } = useAuth();
   const [currentDoc, setCurrentDoc] = useState<DocumentItem>(doc);
@@ -1425,6 +1427,15 @@ function EditorView({ document: doc, onBack }: { document: DocumentItem; onBack:
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [employees, setEmployees] = useState<Array<{ id: string; firstName: string; lastName: string; email: string; poste: string }>>([]);
   const [documentShares, setDocumentShares] = useState<any[]>([]);
+  const router = useRouter();
+  
+  const handleBack = () => {
+    if (backUrl) {
+      router.push(backUrl);
+    } else {
+      onBack();
+    }
+  };
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const aiInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -1607,7 +1618,7 @@ function EditorView({ document: doc, onBack }: { document: DocumentItem; onBack:
         <div className="px-4 sm:px-6 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 min-w-0">
-              <Button variant="ghost" size="icon" onClick={onBack} className="rounded-lg shrink-0"><ArrowLeft className="w-4 h-4" /></Button>
+              <Button variant="ghost" size="icon" onClick={handleBack} className="rounded-lg shrink-0"><ArrowLeft className="w-4 h-4" /></Button>
               <div className="min-w-0">
                 <h1 className="text-base font-semibold text-gray-900 truncate">
                   {currentDoc.title.length > 70 ? currentDoc.title.substring(0, 70) + "..." : currentDoc.title}
@@ -1815,7 +1826,7 @@ function exportToPDF(doc: DocumentItem, user?: UserInfo | null) {
           ${showHeader ? headerBlockHtml : ""}
           <div class="cover-center">
             <div style="text-align:center;width:100%;">
-              <div style="font-size:16pt;font-weight:bold;text-transform:uppercase;margin-bottom:32pt;">${coverTitle}</div>
+              <div style="font-size:16pt;font-weight:bold;text-align:center;margin:0 auto;text-transform:uppercase;margin-bottom:32pt;">${coverTitle}</div>
               ${doc.title ? `<div style="font-size:13pt;font-weight:bold;text-align:center;margin:0 auto 48pt auto;max-width:70%;font-style:italic;">"${escapeHtml(doc.title)}"</div>` : ""}
               <div style="font-size:12pt;font-weight:bold;margin-bottom:64pt;text-align:center;">Bureau Nord | ${dateStr}</div>
             </div>
@@ -1933,7 +1944,11 @@ function EventCompteRenduView({
   const user = useCurrentUser();
   const { toast } = useToast();
 
-  const [title, setTitle] = useState(eventData.title);
+  const existingDoc = eventData.existingDocument;
+  const isEditing = !!existingDoc;
+
+  // Pré-remplir avec les données existantes si on modifie
+  const [title, setTitle] = useState(existingDoc?.title || eventData.title);
   const [description, setDescription] = useState(eventData.description ?? '');
   const [keyPoints, setKeyPoints] = useState<KeyPoint[]>([]);
   const [participantStatuses, setParticipantStatuses] = useState<Record<string, ParticipantStatus>>(
@@ -1945,6 +1960,24 @@ function EventCompteRenduView({
       return init;
     }
   );
+
+  // Charger les présences existantes si on modifie
+  useEffect(() => {
+    if (isEditing && eventData.id) {
+      fetch(`/api/meetings/${eventData.id}/attendance`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.attendances) {
+            const statuses: Record<string, ParticipantStatus> = {};
+            data.attendances.forEach((att: any) => {
+              statuses[att.participantId] = att.status;
+            });
+            setParticipantStatuses(prev => ({ ...prev, ...statuses }));
+          }
+        })
+        .catch(err => console.error('Erreur chargement présences:', err));
+    }
+  }, [isEditing, eventData.id]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -1986,10 +2019,10 @@ function EventCompteRenduView({
     const rows = eventData.participants.map((p) => {
       const status = participantStatuses[p.id];
       const statusLabel = getStatusLabel(status ?? 'ABSENT');
-      return `| ${p.employee.firstName} ${p.employee.lastName} | ${p.employee.poste} | ${p.employee.department} | ${statusLabel} |`;
+      return `| ${p.employee.firstName || "ok"} ${p.employee.lastName} | ${p.employee.poste}  | ${statusLabel} |`;
     });
     return [
-      '| Nom | Poste | Département | Présence |',
+      '| Nom | Poste | Présence |',
       '|---|---|---|---|',
       ...rows,
     ].join('\n');
@@ -2009,28 +2042,27 @@ function EventCompteRenduView({
     ).length;
     const absentCount = eventData.participants.length - presentCount;
 
-    const contextDescription = [
-      `Type d'événement : ${TYPE_LABELS[eventData.type] ?? eventData.type}`,
-      `Catégorie : ${CAT_LABELS[eventData.category] ?? eventData.category}`,
-      `Date : ${formattedDate}`,
-      `Durée : ${eventData.durationMins} minutes`,
-      eventData.location ? `Lieu : ${eventData.location}` : null,
-      eventData.platform ? `Plateforme : ${eventData.platform}` : null,
-      eventData.reportResponsible
-        ? `Responsable rapport : ${eventData.reportResponsible.firstName} ${eventData.reportResponsible.lastName}`
-        : null,
-      `Participants : ${eventData.participants.length} inscrits (${presentCount} présents, ${absentCount} absents)`,
-      '',
-      description ? `Description de l'événement : ${description}` : null,
-      '',
-      keyPoints.length > 0
-        ? `Points abordés :\n${keyPoints.map((kp, i) => `${i + 1}. ${kp.title}${kp.description ? ` : ${kp.description}` : ''}`).join('\n')}`
-        : null,
-      '',
-      `Liste des participants :\n${participantTable}`,
-    ]
-      .filter(Boolean)
-      .join('\n');
+const contextDescription = [
+  `Type d'événement : ${TYPE_LABELS[eventData.type] ?? eventData.type}`,
+  `Catégorie : ${CAT_LABELS[eventData.category] ?? eventData.category}`,
+  `Date : ${formattedDate}`,
+  `Durée : ${eventData.durationMins} minutes`,
+  eventData.location ? `Lieu : ${eventData.location}` : null,
+  eventData.platform ? `Plateforme : ${eventData.platform}` : null,
+  eventData.reportResponsible
+    ? `Responsable rapport : ${eventData.reportResponsible.firstName} ${eventData.reportResponsible.lastName}`
+    : null,
+  `Participants : ${eventData.participants.length} inscrits (${presentCount} présents, ${absentCount} absents)`,
+  '',
+  description ? `Description de l'événement : ${description}` : null,
+  '',
+  keyPoints.length > 0
+    ? `Points abordés :\n${keyPoints.map((kp, i) => `${i + 1}. ${kp.title}${kp.description ? ` : ${kp.description}` : ''}`).join('\n')}`
+    : null,
+  // ← participantTable retiré ici
+]
+  .filter(Boolean)
+  .join('\n');
 
     const eventKeyPoints: KeyPoint[] = [
       {
@@ -2094,11 +2126,7 @@ function EventCompteRenduView({
       const participantPageContent = [
         '\n\n--PAGE--\n',
         '## Liste des participants\n',
-        `**Événement :** ${title}  `,
-        `**Date :** ${formattedDate}  `,
-        `**Type :** ${TYPE_LABELS[eventData.type] ?? eventData.type}  `,
-        `**Participants inscrits :** ${eventData.participants.length} | **Présents :** ${presentCount} | **Absents :** ${absentCount}`,
-        '',
+         '',
         participantTable,
       ].join('\n');
 
@@ -2126,14 +2154,29 @@ function EventCompteRenduView({
         body: JSON.stringify({ attendances })
       });
 
-      const createdDoc = await createDocument(docData);
-      if (!createdDoc) throw new Error('Erreur lors de la sauvegarde');
-
-      toast({
-        title: 'Compte rendu généré',
-        description: `"${createdDoc.title}" a été créé avec succès.`,
-      });
-      onCreated(createdDoc);
+      let createdDoc: DocumentItem | null;
+      if (isEditing && existingDoc) {
+        // Mettre à jour le document existant
+        createdDoc = await updateDocument(existingDoc.id, {
+          title: docData.title,
+          content: docData.content,
+          preview: docData.preview,
+        });
+        if (!createdDoc) throw new Error('Erreur lors de la mise à jour');
+        toast({
+          title: 'Compte rendu mis à jour',
+          description: `"${createdDoc.title}" a été mis à jour avec succès.`,
+        });
+      } else {
+        // Créer un nouveau document
+        createdDoc = await createDocument(docData);
+        if (!createdDoc) throw new Error('Erreur lors de la sauvegarde');
+        toast({
+          title: 'Compte rendu généré',
+          description: `"${createdDoc.title}" a été créé avec succès.`,
+        });
+      }
+      onCreated(createdDoc!);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erreur';
       setError(msg);
@@ -2432,30 +2475,77 @@ export default function DocumentAssistant() {
   const [view, setView] = useState<AppView>("dashboard");
   const [currentDoc, setCurrentDoc] = useState<DocumentItem | null>(null);
   const [eventData, setEventData] = useState<EventData | null>(null);
+  const [backUrl, setBackUrl] = useState<string | null>(null);
   const mounted = useIsMounted();
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
-  // Détecter si un événement est en attente depuis la page Événements
+  // Détecter si un document est demandé via URL (modification)
+  // ou si un événement est en attente depuis la page Événements
   useEffect(() => {
     if (!mounted) return;
+    
+    // Récupérer l'URL de retour depuis les paramètres
+    const backParam = searchParams.get('back');
+    if (backParam) {
+      setBackUrl(backParam);
+    }
+    
+    // Priorité 1: docId dans l'URL (modification directe)
+    const docId = searchParams.get('docId');
+    if (docId) {
+      console.log('Chargement document depuis URL:', docId);
+      fetch(`/api/documents/${docId}`)
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
+        .then(doc => {
+          if (!doc || !doc.id) throw new Error('Document invalide');
+          setCurrentDoc(doc);
+          setView('editor');
+        })
+        .catch(err => {
+          console.error('Erreur chargement document:', err);
+          alert('Impossible de charger le document. Réessayez.');
+          setView('dashboard');
+        });
+      return;
+    }
+    
+    // Priorité 2: sessionStorage (création depuis événements)
     try {
       const raw = sessionStorage.getItem('evenement_compte_rendu');
       if (raw) {
-        const data: EventData & { existingReportId?: string } = JSON.parse(raw);
+        const data: EventData & { existingReportId?: string; backUrl?: string } = JSON.parse(raw);
         sessionStorage.removeItem('evenement_compte_rendu');
         
-        if (data.existingReportId) {
-          fetch(`/api/documents/${data.existingReportId}`)
-            .then(res => res.json())
-            .then(doc => {
-              setCurrentDoc(doc);
-              setView('editor');
-            })
-            .catch(err => {
-              console.error('Erreur chargement document:', err);
-              setEventData(data);
-              setView('event-compterendu');
-            });
-        } else {
+        // Récupérer l'URL de retour depuis sessionStorage
+        if (data.backUrl) {
+          setBackUrl(data.backUrl);
+        }
+        
+       if (data.existingReportId) {
+  fetch(`/api/documents/${data.existingReportId}`)
+    .then(res => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    })
+    .then(doc => {
+      // S'assurer que le document a bien un contenu
+      if (!doc || !doc.id) throw new Error('Document invalide');
+      setCurrentDoc(doc);
+      setView('editor');
+    })
+    .catch(err => {
+      console.error('Erreur chargement document:', err);
+      // Ne PAS créer un nouveau document — afficher une erreur
+      alert('Impossible de charger le compte rendu existant. Réessayez.');
+      // Rester sur le dashboard
+      setView('dashboard');
+    });
+  return; // important
+} else {
           setEventData(data);
           setView('event-compterendu');
         }
@@ -2463,7 +2553,7 @@ export default function DocumentAssistant() {
     } catch {
       sessionStorage.removeItem('evenement_compte_rendu');
     }
-  }, [mounted]);
+  }, [mounted, searchParams]);
 
   if (!mounted) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -2490,6 +2580,7 @@ export default function DocumentAssistant() {
         {view === "editor" && currentDoc && (
           <EditorView key={`editor-${currentDoc.id}`}
             document={currentDoc}
+            backUrl={backUrl}
             onBack={() => { setCurrentDoc(null); setView("dashboard"); }} />
         )}
         {view === "event-compterendu" && eventData && (

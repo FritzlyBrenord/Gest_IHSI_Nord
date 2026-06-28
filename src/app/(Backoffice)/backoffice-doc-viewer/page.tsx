@@ -24,9 +24,7 @@ function ShareMenu({ onShare }: { onShare: (m: 'whatsapp' | 'email' | 'native') 
   const [open, setOpen] = useState(false);
   return (
     <div className="relative">
-      <Button variant="outline" size="sm" onClick={() => setOpen(v => !v)} className="gap-1.5">
-        <Share2 className="w-4 h-4" /> Partager
-      </Button>
+     
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
@@ -60,7 +58,7 @@ function DocViewerContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const docId = searchParams.get('docId');
-  const backUrl = searchParams.get('back') || '/meetings';
+  const backUrl =  '/meetings';
 
   const [doc, setDoc] = useState<DocumentItem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -124,9 +122,7 @@ function DocViewerContent() {
                 <ShareMenu onShare={sharePdf} />
               </>
             )}
-            <Button variant="ghost" size="sm" onClick={() => router.push(backUrl)}>
-              <ArrowLeft className="w-4 h-4 mr-1" /> Retour
-            </Button>
+          
           </div>
         </div>
       </header>
@@ -170,14 +166,7 @@ function DocViewerContent() {
               />
             </div>
 
-            {/* Boutons de bas de page */}
-            <div className="flex flex-wrap gap-3 justify-center pb-4">
-              <Button onClick={downloadPdf} disabled={isGenerating} size="lg" className="gap-2 bg-gray-900 hover:bg-gray-800 text-white rounded-xl px-6">
-                {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
-                {isGenerating ? 'Génération du PDF…' : 'Télécharger le PDF'}
-              </Button>
-              <ShareMenu onShare={sharePdf} />
-            </div>
+    
           </div>
         )}
       </main>

@@ -1,15 +1,15 @@
 import nodemailer from 'nodemailer';
-
-export const transporter = nodemailer.createTransport({
+import SMTPTransport from 'nodemailer/lib/smtp-transport';
+const transportOptions: SMTPTransport.Options = {
   host: 'smtp.gmail.com',
   port: 465,
   secure: true,
   auth: {
-    user: process.env.SMTP_USER || 'ihsi.nord@gmail.com',
-    pass: process.env.SMTP_PASSWORD || 'odgqsrlnywdrsizr',
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASSWORD,
   },
-});
-
+};
+export const transporter = nodemailer.createTransport(transportOptions);
 export const fromEmail = process.env.SMTP_FROM_EMAIL || 'ihsi.nord@gmail.com';
 
 function formatDate(date: Date) {
@@ -110,7 +110,7 @@ export async function sendStatusChangeNotification(to: string, details: {
   title: string; startAt: Date; status: string;
 }) {
   const info = STATUS_INFO[details.status];
-  if (!info) return; // Ne pas envoyer pour A_VENIR
+  if (!info) return;
   const dateStr = formatDate(details.startAt);
 
   await transporter.sendMail({
@@ -159,14 +159,21 @@ export async function sendBulkEmails(
   emails: string[],
   sendFn: (to: string) => Promise<void>
 ): Promise<{ sent: number; failed: number; errors: string[] }> {
-  let sent = 0; let failed = 0; const errors: string[] = [];
-  await Promise.allSettled(
-    emails.map((email) =>
-      sendFn(email)
-        .then(() => sent++)
-        .catch((err) => { failed++; errors.push(err.message || email); })
-    )
-  );
+  let sent = 0;
+  let failed = 0;
+  const errors: string[] = [];
+
+  for (const email of emails) {
+    try {
+      await sendFn(email);
+      sent++;
+      await new Promise(resolve => setTimeout(resolve, 300));
+    } catch (err: any) {
+      failed++;
+      errors.push(err.message || email);
+    }
+  }
+
   return { sent, failed, errors: errors.slice(0, 5) };
 }
 
@@ -221,4 +228,3 @@ export async function sendObjectiveAssignedToSupervisor(to: string, details: {
       </div>`,
   });
 }
-

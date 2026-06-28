@@ -1,3 +1,5 @@
+// src/proxy.ts
+
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
@@ -25,11 +27,9 @@ const employeRoutes = [
   "/rapports"
 ];
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {  // ← "middleware" → "proxy"
   const { nextUrl } = req;
   
-  // Utilisation de getToken de next-auth/jwt pour fonctionner avec Edge Middleware
-  // sans importer prisma via auth.ts
   const token = await getToken({ 
     req, 
     secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
@@ -43,18 +43,14 @@ export async function middleware(req: NextRequest) {
   const isApiAuthRoute = nextUrl.pathname.startsWith("/api/auth");
   const isPublicRoute = publicRoutes.some(route => nextUrl.pathname === route);
 
-  if (isApiAuthRoute) {
-    return NextResponse.next();
-  }
+  if (isApiAuthRoute) return NextResponse.next();
 
   if (isPublicRoute) {
     if (isLoggedIn) {
-      if (role === "SUPER_ADMIN" || role === "ADMIN") {
+      if (role === "SUPER_ADMIN" || role === "ADMIN")
         return NextResponse.redirect(new URL("/pilotage-administratif", nextUrl));
-      }
-      if (role === "SUPERVISEUR") {
+      if (role === "SUPERVISEUR")
         return NextResponse.redirect(new URL("/superviseur", nextUrl));
-      }
       return NextResponse.redirect(new URL("/home", nextUrl));
     }
     return NextResponse.next();
@@ -62,11 +58,10 @@ export async function middleware(req: NextRequest) {
 
   if (!isLoggedIn) {
     let callbackUrl = nextUrl.pathname;
-    if (nextUrl.search) {
-      callbackUrl += nextUrl.search;
-    }
-    const encodedCallbackUrl = encodeURIComponent(callbackUrl);
-    return NextResponse.redirect(new URL(`/login?callbackUrl=${encodedCallbackUrl}`, nextUrl));
+    if (nextUrl.search) callbackUrl += nextUrl.search;
+    return NextResponse.redirect(
+      new URL(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`, nextUrl)
+    );
   }
 
   const isBackofficeRoute = backofficeRoutes.some(route => nextUrl.pathname.startsWith(route));
@@ -75,31 +70,26 @@ export async function middleware(req: NextRequest) {
 
   if (isBackofficeRoute) {
     if (role !== "SUPER_ADMIN" && role !== "ADMIN") {
-      if (role === "SUPERVISEUR") {
+      if (role === "SUPERVISEUR")
         return NextResponse.redirect(new URL("/superviseur", nextUrl));
-      }
       return NextResponse.redirect(new URL("/home", nextUrl));
     }
   }
 
   if (isSuperviseurRoute) {
     if (role !== "SUPER_ADMIN" && role !== "SUPERVISEUR") {
-      if (role === "ADMIN") {
+      if (role === "ADMIN")
         return NextResponse.redirect(new URL("/pilotage-administratif", nextUrl));
-      }
       return NextResponse.redirect(new URL("/home", nextUrl));
     }
   }
 
   if (isEmployeRoute) {
-    // Selon le prompt : "idem pou executant"
     if (role !== "EXECUTANT" && role !== "SECRETAIRE") {
-      if (role === "SUPER_ADMIN" || role === "ADMIN") {
+      if (role === "SUPER_ADMIN" || role === "ADMIN")
         return NextResponse.redirect(new URL("/pilotage-administratif", nextUrl));
-      }
-      if (role === "SUPERVISEUR") {
+      if (role === "SUPERVISEUR")
         return NextResponse.redirect(new URL("/superviseur", nextUrl));
-      }
     }
   }
 

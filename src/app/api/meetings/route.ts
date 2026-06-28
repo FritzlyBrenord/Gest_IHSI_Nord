@@ -70,57 +70,51 @@ export async function POST(req: Request) {
       }
     });
 
-    // Envoyer les emails
-    const emailPromises: Promise<any>[] = [];
+    // ─── Envoi séquentiel avec délai pour éviter le throttling Gmail ───
     let sent = 0;
     let failed = 0;
-    let errors: string[] = [];
+    const errors: string[] = [];
 
     const dateObj = new Date(startAt);
-
     const emailDetails = {
       title, startAt: dateObj, durationMins, type, location, platform, meetingUrl
     };
 
-    meeting.participants.forEach(p => {
+    for (const p of meeting.participants) {
       if (p.employee.email) {
-        emailPromises.push(
-          sendMeetingInvitation(p.employee.email, emailDetails)
-            .then(() => sent++)
-            .catch(err => {
-              failed++;
-              errors.push(err.message);
-              console.error('Failed to send invite to:', p.employee.email, err);
-            })
-        );
+        try {
+          await sendMeetingInvitation(p.employee.email, emailDetails);
+          sent++;
+          console.log(`✅ Email envoyé à : ${p.employee.email}`);
+        } catch (err: any) {
+          failed++;
+          errors.push(err.message);
+          console.error(`❌ Échec envoi à ${p.employee.email}:`, err.message);
+        }
+        // Attendre 2 secondes entre chaque email
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
-    });
-
-    if (meeting.reportResponsible && meeting.reportResponsible.email) {
-      emailPromises.push(
-        sendReporterNotification(meeting.reportResponsible.email, emailDetails)
-          .then(() => sent++)
-          .catch(err => {
-            failed++;
-            errors.push(err.message);
-            console.error('Failed to send reporter notification to:', meeting.reportResponsible?.email, err);
-          })
-      );
     }
 
-    // On n'attend pas forcément que tous les emails soient envoyés pour répondre au frontend,
-    // mais ici on fait un Promise.allSettled pour avoir les statistiques.
-    if (emailPromises.length > 0) {
-      await Promise.allSettled(emailPromises);
+    if (meeting.reportResponsible?.email) {
+      try {
+        await sendReporterNotification(meeting.reportResponsible.email, emailDetails);
+        sent++;
+        console.log(`✅ Notification rapport envoyée à : ${meeting.reportResponsible.email}`);
+      } catch (err: any) {
+        failed++;
+        errors.push(err.message);
+        console.error(`❌ Échec notification rapport à ${meeting.reportResponsible.email}:`, err.message);
+      }
     }
 
     return NextResponse.json({
       meeting,
       emailDelivery: {
-        attempted: emailPromises.length > 0,
+        attempted: meeting.participants.length,
         sent,
         failed,
-        errors: errors.slice(0, 3) // Ne renvoyer que les 3 premières erreurs pour ne pas surcharger
+        errors: errors.slice(0, 3)
       }
     }, { status: 201 });
 

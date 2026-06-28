@@ -39,7 +39,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
     if (loggingOut) return;
     setLoggingOut(true);
     try {
-      await fetch('/api/logout', { method: 'POST' });
+      await fetch('/api/users/logout', { method: 'POST' });
     } finally {
       onNavigate?.();
       router.push('/login');

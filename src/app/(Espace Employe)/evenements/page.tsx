@@ -8,27 +8,33 @@ export default function SuperviseurEvenementsPage() {
   const router = useRouter();
 
   function handleCompteRendu(meeting: MeetingEvent) {
-    // Stocker les données de l'événement dans sessionStorage
-    sessionStorage.setItem(
-      'evenement_compte_rendu',
-      JSON.stringify({
-        id: meeting.id,
-        title: meeting.title,
-        description: meeting.description,
-        startAt: meeting.startAt,
-        durationMins: meeting.durationMins,
-        type: meeting.type,
-        category: meeting.category,
-        location: meeting.location,
-        platform: meeting.platform,
-        reportResponsible: meeting.reportResponsible,
-        participants: meeting.participants,
-        status: meeting.status,
-        existingReportId: meeting.reports?.[0]?.id,
-      })
-    );
-    // Naviguer vers la page documents qui détectera le raccourci
-    router.push('/executant/documents');
+    const existingReportId = meeting.reports?.[0]?.id;
+    
+    if (existingReportId) {
+      // Modification: naviguer avec l'ID du document et la page de retour
+      router.push(`/executant/documents?docId=${existingReportId}&back=/executant/evenements`);
+    } else {
+      // Création: stocker les données de l'événement dans sessionStorage
+      sessionStorage.setItem(
+        'evenement_compte_rendu',
+        JSON.stringify({
+          id: meeting.id,
+          title: meeting.title,
+          description: meeting.description,
+          startAt: meeting.startAt,
+          durationMins: meeting.durationMins,
+          type: meeting.type,
+          category: meeting.category,
+          location: meeting.location,
+          platform: meeting.platform,
+          reportResponsible: meeting.reportResponsible,
+          participants: meeting.participants,
+          status: meeting.status,
+          backUrl: '/executant/evenements',
+        })
+      );
+      router.push('/executant/documents?back=/executant/evenements');
+    }
   }
 
   return (
@@ -37,6 +43,7 @@ export default function SuperviseurEvenementsPage() {
         filterByEmployeeId={employerId}
         allowActions
         onCompteRendu={handleCompteRendu}
+        docViewerPath='/executant/doc-viewer'
       />
     </div>
   );

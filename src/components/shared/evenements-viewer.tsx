@@ -25,6 +25,7 @@ import {
   Timer,
   CalendarClock,
   CalendarX2,
+  Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -579,6 +580,7 @@ interface DetailProps {
 
 function EventDetail({ meeting, filterByEmployeeId, allowActions, onCompteRendu, onBack, docViewerPath = '/executant/doc-viewer', currentPath = '/evenements' }: DetailProps) {
   const [activeTab, setActiveTab] = useState<'info' | 'participants' | 'documents' | 'reports'>('info');
+  const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
   const visualStatus = computeVisualStatus(meeting);
   const cfg = VISUAL_STATUS_CONFIG[visualStatus];
   const catCfg = CATEGORY_CONFIG[meeting.category];
@@ -593,6 +595,25 @@ function EventDetail({ meeting, filterByEmployeeId, allowActions, onCompteRendu,
   const startObj = new Date(meeting.startAt);
 
   const visibleReports = meeting.reports?.filter(r => isReporter || r.visibility === 'public') || [];
+
+  const handleDeleteDocument = async (docId: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce document ?')) return;
+    
+    setDeletingDocId(docId);
+    try {
+      const res = await fetch(`/api/training-documents/${docId}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error('Erreur lors de la suppression');
+      toast.success('Document supprimé avec succès');
+      // Recharger la page pour mettre à jour la liste
+      window.location.reload();
+    } catch (error) {
+      toast.error('Erreur lors de la suppression du document');
+    } finally {
+      setDeletingDocId(null);
+    }
+  };
 
   const DETAIL_TABS = [
     { id: 'info' as const, label: 'Informations' },
@@ -851,17 +872,28 @@ function EventDetail({ meeting, filterByEmployeeId, allowActions, onCompteRendu,
                     </p>
                     <p className="text-xs text-slate-400 mt-0.5">{formatFileSize(doc.size)}</p>
                   </div>
-                  <a
-                    href={doc.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="shrink-0"
-                  >
-                    <Button variant="outline" size="sm" className="rounded-lg text-xs gap-1.5">
-                      <Download className="h-3.5 w-3.5" />
-                      Télécharger
+                  <div className="flex items-center gap-2 shrink-0">
+                    <a
+                      href={doc.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button variant="outline" size="sm" className="rounded-lg text-xs gap-1.5">
+                        <Download className="h-3.5 w-3.5" />
+                        Télécharger
+                      </Button>
+                    </a>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="rounded-lg text-xs gap-1.5 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => handleDeleteDocument(doc.id)}
+                      disabled={deletingDocId === doc.id}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      {deletingDocId === doc.id ? 'Suppression...' : 'Supprimer'}
                     </Button>
-                  </a>
+                  </div>
                 </div>
               ))}
             </div>
