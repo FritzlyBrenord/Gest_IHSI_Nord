@@ -69,9 +69,11 @@ export default function InventorySessionPage() {
     const [adding, setAdding] = useState(false);
     const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
     const [updating, setUpdating] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const loadData = async () => {
         setLoading(true);
+        setError(null);
         try {
             const [sessionRes, materialsRes] = await Promise.all([
                 fetch(`/api/inventory/${params.id}`),
@@ -79,7 +81,6 @@ export default function InventorySessionPage() {
             ]);
 
             if (sessionRes.status === 404) {
-                // session not found — show UI message instead of throwing
                 setSession(null);
                 return;
             }
@@ -96,6 +97,7 @@ export default function InventorySessionPage() {
             setMaterials(materialList);
         } catch (error) {
             console.error(error);
+            setError(error instanceof Error ? error.message : 'Erreur lors du chargement');
             setSession(null);
         } finally {
             setLoading(false);
@@ -103,9 +105,8 @@ export default function InventorySessionPage() {
     };
 
     useEffect(() => {
-        if (!params?.id) return; // don't fetch until we have the id
-        (async () => await loadData())()
-
+        if (!params?.id) return;
+        loadData();
     }, [params?.id]);
 
     const availableMaterials = useMemo(() => {
@@ -125,13 +126,14 @@ export default function InventorySessionPage() {
             router.push('/inventory');
         } catch (error) {
             console.error(error);
-            alert('Erreur lors de la suppression');
+            setError('Erreur lors de la suppression');
         }
     };
 
     const handleChangeSessionStatus = async (status: string) => {
         try {
             setUpdating(true);
+            setError(null);
             const res = await fetch(`/api/inventory/${params.id}`, {
                 method: 'PUT',
                 headers: {'Content-Type': 'application/json'},
@@ -142,7 +144,7 @@ export default function InventorySessionPage() {
             await loadData();
         } catch (error) {
             console.error(error);
-            alert('Erreur lors de la mise à jour');
+            setError('Erreur lors de la mise à jour');
         } finally {
             setUpdating(false);
         }
@@ -153,19 +155,23 @@ export default function InventorySessionPage() {
 
         try {
             setUpdating(true);
+            setError(null);
             const res = await fetch(`/api/inventory/${params.id}/lines`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({materialIds: selectedMaterials}),
             });
 
-            if (!res.ok) throw new Error('Erreur lors de l’ajout');
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || data.details || 'Erreur lors de l\'ajout');
+            }
             setSelectedMaterials([]);
             setAdding(false);
             await loadData();
         } catch (error) {
             console.error(error);
-            alert('Erreur lors de l’ajout');
+            setError(error instanceof Error ? error.message : 'Erreur lors de l\'ajout');
         } finally {
             setUpdating(false);
         }
@@ -174,24 +180,30 @@ export default function InventorySessionPage() {
     const handleUpdateLineStatus = async (lineId: string, status: string) => {
         try {
             setUpdating(true);
-            const res = await fetch(`/api/inventory/${params.id}/lines`, {
+            setError(null);
+
+            const res = await fetch(`/api/inventory/${params.id}/lines/${lineId}`, {
                 method: 'PUT',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({lineId, status}),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status }),
             });
 
-            if (!res.ok) throw new Error('Erreur de mise à jour');
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || data.details || 'Erreur de mise à jour');
+            }
+
             await loadData();
         } catch (error) {
-            console.error(error);
-            alert('Erreur lors de la mise à jour de la ligne');
+            console.error('Erreur de mise à jour:', error);
+            setError(error instanceof Error ? error.message : 'Erreur de mise à jour');
         } finally {
             setUpdating(false);
         }
     };
 
     if (loading) return <p className="p-6">Chargement…</p>;
-    if (!session) return <p className="p-6">Session introuvable</p>;
+    if (!session) return <p className="p-6 text-red-600">Session introuvable</p>;
 
     const completedCount = session.lines.filter((l) => l.status === 'PRESENT').length;
     const progress = session.lines.length ? Math.round((completedCount / session.lines.length) * 100) : 0;
@@ -209,6 +221,12 @@ export default function InventorySessionPage() {
                     </Link>
                 </div>
 
+                {error && (
+                    <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+                        <p className="text-sm text-red-700">{error}</p>
+                    </div>
+                )}
+
                 <div className="rounded-2xl bg-white p-6 shadow-sm">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div>
@@ -216,8 +234,8 @@ export default function InventorySessionPage() {
                                 <h1 className="text-2xl font-bold text-slate-900">{session.title}</h1>
                                 <span
                                     className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_COLORS[session.status] ?? 'bg-slate-100 text-slate-700'}`}>
-                  {session.status}
-                </span>
+                                    {session.status}
+                                </span>
                             </div>
                             {session.description ? (
                                 <p className="mt-1 text-sm text-slate-500">{session.description}</p>
@@ -242,12 +260,12 @@ export default function InventorySessionPage() {
                         <div className="mb-2 flex items-center justify-between text-sm">
                             <span className="font-medium text-slate-700">Progression</span>
                             <span className="text-slate-500">
-                {completedCount} / {session.lines.length}
-              </span>
+                                {completedCount} / {session.lines.length}
+                            </span>
                         </div>
                         <div className="h-2 rounded-full bg-slate-200">
                             <div
-                                className="h-2 rounded-full bg-emerald-600"
+                                className="h-2 rounded-full bg-emerald-600 transition-all duration-300"
                                 style={{width: `${progress}%`}}
                             />
                         </div>
@@ -288,7 +306,7 @@ export default function InventorySessionPage() {
                 <div className="rounded-2xl bg-white p-6 shadow-sm">
                     <div className="mb-4 flex items-center justify-between">
                         <h2 className="text-lg font-semibold text-slate-900">Matériels</h2>
-                        {session.status !== 'TERMINE' && (
+                        {session.status !== 'TERMINE' && session.status !== 'ANNULE' && (
                             <button
                                 onClick={() => setAdding((v) => !v)}
                                 className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
@@ -325,8 +343,8 @@ export default function InventorySessionPage() {
                                                 }}
                                             />
                                             <span>
-                        <strong>{material.inventoryCode}</strong> — {material.name} ({material.category})
-                      </span>
+                                                <strong>{material.inventoryCode}</strong> — {material.name} ({material.category})
+                                            </span>
                                         </label>
                                     ))}
                                 </div>
@@ -365,7 +383,7 @@ export default function InventorySessionPage() {
                                     <th className="pb-3 pr-4">Catégorie</th>
                                     <th className="pb-3 pr-4">Statut</th>
                                     <th className="pb-3 pr-4">Vérifié par</th>
-                                    {session.status !== 'TERMINE' && <th className="pb-3 pr-4">Action</th>}
+                                    {session.status !== 'TERMINE' && session.status !== 'ANNULE' && <th className="pb-3 pr-4">Action</th>}
                                 </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
@@ -377,21 +395,21 @@ export default function InventorySessionPage() {
                                         <td className="py-4 pr-4">{line.material?.name ?? '—'}</td>
                                         <td className="py-4 pr-4">{line.material?.category ?? '—'}</td>
                                         <td className="py-4 pr-4">
-                        <span
-                            className={`rounded-full px-2.5 py-1 text-xs font-medium ${LINE_STATUS_COLORS[line.status] ?? 'bg-slate-100 text-slate-700'}`}>
-                          {line.status}
-                        </span>
+                                                <span
+                                                    className={`rounded-full px-2.5 py-1 text-xs font-medium ${LINE_STATUS_COLORS[line.status] ?? 'bg-slate-100 text-slate-700'}`}>
+                                                    {line.status}
+                                                </span>
                                         </td>
                                         <td className="py-4 pr-4 text-xs text-slate-500">
                                             {line.checkedBy ? `${line.checkedBy.firstName} ${line.checkedBy.lastName}` : '—'}
                                         </td>
-                                        {session.status !== 'TERMINE' && (
+                                        {session.status !== 'TERMINE' && session.status !== 'ANNULE' && (
                                             <td className="py-4 pr-4">
                                                 <select
                                                     value={line.status}
                                                     onChange={(e) => handleUpdateLineStatus(line.id, e.target.value)}
                                                     disabled={updating}
-                                                    className="rounded border border-slate-300 px-2 py-1 text-xs"
+                                                    className="rounded border border-slate-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                                                 >
                                                     <option value="PRESENT">Présent</option>
                                                     <option value="ABSENT">Absent</option>

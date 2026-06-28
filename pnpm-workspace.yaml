@@ -1,6 +1,8 @@
 allowBuilds:
   '@prisma/client': false
   '@prisma/engines': false
+  core-js: true
+  msgpackr-extract: true
   prisma: false
   sharp: false
   unrs-resolver: false
