@@ -21,7 +21,7 @@ const mainNavItems = [
   { href: '/users', label: 'Utilisateurs', icon: UserCog },
   { href: '/meetings', label: 'Événements', icon: Calendar },
   { href: '/objectives', label: 'Objectifs', icon: ClipboardList },
-  {href: '/inventory', label: 'Intentaire', icon:StarHalfIcon },
+  {href: '/inventory', label: 'Inventaire', icon:StarHalfIcon },
   { href: '/documents', label: 'Documents', icon: ClipboardList },
 ];
 
