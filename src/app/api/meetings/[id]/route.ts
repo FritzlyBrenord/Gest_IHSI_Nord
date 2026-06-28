@@ -38,7 +38,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         id: meeting.reportResponsible.id,
         firstName: meeting.reportResponsible.firstName,
         lastName: meeting.reportResponsible.lastName,
-        position: meeting.reportResponsible.poste,
+        poste: meeting.reportResponsible.poste,
         department: meeting.reportResponsible.department,
       } : null,
       participants: meeting.participants.map(p => ({
@@ -50,7 +50,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
           id: p.employee.id,
           firstName: p.employee.firstName,
           lastName: p.employee.lastName,
-          position: p.employee.poste,
+          poste: p.employee.poste,
           department: p.employee.department,
         }
       })),
@@ -118,7 +118,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       reportResponsible: updated.reportResponsible ? {
         firstName: updated.reportResponsible.firstName,
         lastName: updated.reportResponsible.lastName,
-        position: updated.reportResponsible.poste,
+        poste: updated.reportResponsible.poste,
       } : null,
       participants: updated.participants.map(p => ({
         id: p.id,
@@ -129,7 +129,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           id: p.employee.id,
           firstName: p.employee.firstName,
           lastName: p.employee.lastName,
-          position: p.employee.poste,
+          poste: p.employee.poste,
         }
       }))
     };

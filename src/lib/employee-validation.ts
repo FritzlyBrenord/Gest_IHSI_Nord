@@ -8,7 +8,7 @@ export type EmployeeValidationInput = {
   lastName?: string | null;
   email?: string | null;
   phone?: string | null;
-  position?: string | null;
+  poste?: string | null;
   department?: string | null;
   hireDate?: string | null;
 };
@@ -20,7 +20,7 @@ export type EmployeeValidationResult = {
     lastName: string;
     email: string;
     phone: string | null;
-    position: string;
+    poste: string;
     department: string;
     hireDate: string | null;
   };
@@ -32,7 +32,7 @@ export type EmployeeValidationResult = {
     | 'INVALID_LAST_NAME'
     | 'INVALID_EMAIL'
     | 'INVALID_PHONE'
-    | 'MISSING_POSITION'
+    | 'MISSING_poste'
     | 'MISSING_DEPARTMENT'
     | 'INVALID_HIRE_DATE';
 };
@@ -100,9 +100,9 @@ export function validateEmployeeInput(input: EmployeeValidationInput): EmployeeV
     };
   }
 
-  const position = String(input.position || '').trim();
-  if (!position) {
-    return { ok: false, error: 'Poste obligatoire', code: 'MISSING_POSITION' };
+  const poste = String(input.poste || '').trim();
+  if (!poste) {
+    return { ok: false, error: 'Poste obligatoire', code: 'MISSING_poste' };
   }
 
   const department = String(input.department || '').trim();
@@ -138,7 +138,7 @@ export function validateEmployeeInput(input: EmployeeValidationInput): EmployeeV
       lastName,
       email,
       phone: normalizedPhone.complete ? normalizedPhone.formatted : null,
-      position,
+      poste,
       department,
       hireDate,
     },

@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       lastName: emp.lastName,
       email: emp.email,
       phone: emp.phone,
-      position: emp.poste,
+      poste: emp.poste,
       department: emp.department,
       hireDate: emp.dateEmbauche?.toISOString() || null,
       photoUrl: emp.utilisateur?.photoUrl || null,
@@ -76,9 +76,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { firstName, lastName, email, phone, position, department, hireDate } = body;
+    const { firstName, lastName, email, phone, poste, department, hireDate } = body;
 
-    if (!firstName || !lastName || !email || !position || !department) {
+    if (!firstName || !lastName || !email || !poste || !department) {
       return NextResponse.json({ error: 'Tous les champs obligatoires ne sont pas remplis' }, { status: 400 });
     }
 
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
         lastName,
         email,
         phone,
-        poste: position,
+        poste: poste,
         department,
         dateEmbauche: hireDate ? new Date(hireDate) : null,
         isActive: true,

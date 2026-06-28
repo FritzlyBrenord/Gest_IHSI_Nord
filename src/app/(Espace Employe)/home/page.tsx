@@ -37,7 +37,7 @@ interface TeamSummary {
   supervisor: {
     firstName: string;
     lastName: string;
-    position: string;
+    poste: string;
   };
 }
 

@@ -11,6 +11,7 @@ declare module "next-auth" {
     role: Role;
     employerId: string;
     photoUrl?: string | null;
+    poste?: string;
   }
   interface Session {
     user: {
@@ -20,6 +21,7 @@ declare module "next-auth" {
       role: Role;
       employerId: string;
       photoUrl?: string | null;
+      poste?: string;
     }
   }
 }
@@ -110,6 +112,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             role: utilisateur.role,
             employerId: utilisateur.employerId,
             photoUrl: utilisateur.photoUrl,
+            poste: utilisateur.employer.poste,
           };
         } catch (error) {
           console.error("❌ Erreur dans authorize:", error);
@@ -124,6 +127,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.id = user.id;
         token.role = user.role;
         token.employerId = user.employerId;
+        token.poste = user.poste;
        
       }
       return token;
@@ -133,6 +137,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.id = token.id as string;
         session.user.role = token.role as Role;
         session.user.employerId = token.employerId as string;
+        session.user.poste = token.poste as string | undefined;
    
         session.user.photoUrl = null;
       }

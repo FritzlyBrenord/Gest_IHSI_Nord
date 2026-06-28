@@ -44,7 +44,7 @@ export default function SuperviseurEquipePage() {
   const filteredMembers = useMemo(() => {
     return teamMembers.filter((member) => {
       const fullName = `${member.firstName || member.prenom || ''} ${member.lastName || member.nom || ''}`;
-      const role = member.position || member.poste || '';
+      const role = member.poste || member.poste || '';
       const haystack = `${fullName} ${role} ${member.email}`.toLowerCase();
       const matchSearch = haystack.includes(search.trim().toLowerCase());
       const memberIsActive = Boolean(member.isActive ?? (member.statut ? member.statut === 'actif' : false));
@@ -106,7 +106,7 @@ export default function SuperviseurEquipePage() {
                         <p>
                           Superviseur: {team.supervisor.firstName || team.supervisor.prenom || ''} {team.supervisor.lastName || team.supervisor.nom || ''}
                         </p>
-                        <p>{team.supervisor.position || team.supervisor.poste || ''}</p>
+                        <p>{team.supervisor.poste || team.supervisor.poste || ''}</p>
                       </div>
                       <div className="flex items-center justify-between pt-1">
                         <span className="text-sm font-medium text-slate-700">
@@ -195,7 +195,7 @@ export default function SuperviseurEquipePage() {
                             <p className="font-semibold text-slate-950">
                               {member.firstName || member.prenom || ''} {member.lastName || member.nom || ''}
                             </p>
-                            <p className="text-sm text-slate-500">{member.position || member.poste || ''}</p>
+                            <p className="text-sm text-slate-500">{member.poste || member.poste || ''}</p>
                           </div>
                         </div>
                         <StatusBadge status={Boolean(member.isActive ?? (member.statut ? member.statut === 'actif' : false)) ? 'actif' : 'inactif'} />

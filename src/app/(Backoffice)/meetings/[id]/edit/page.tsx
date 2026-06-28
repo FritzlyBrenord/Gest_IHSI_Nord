@@ -19,7 +19,7 @@ interface Employee {
   id: string;
   firstName: string;
   lastName: string;
-  position: string;
+  poste: string;
   department: string;
 }
 
@@ -356,7 +356,7 @@ export default function EditMeetingPage({ params }: { params: Promise<{ id: stri
                   <SelectItem value="none">Aucun pour le moment</SelectItem>
                   {employees.map((emp) => (
                     <SelectItem key={emp.id} value={emp.id}>
-                      {emp.firstName} {emp.lastName} - {emp.position}
+                      {emp.firstName} {emp.lastName} - {emp.poste}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -430,7 +430,7 @@ export default function EditMeetingPage({ params }: { params: Promise<{ id: stri
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{emp.firstName} {emp.lastName}</p>
-                          <p className="text-xs text-muted-foreground truncate">{emp.position} · {emp.department}</p>
+                          <p className="text-xs text-muted-foreground truncate">{emp.poste} · {emp.department}</p>
                         </div>
                       </div>
                     ))}

@@ -32,7 +32,7 @@ export async function POST(req: Request) {
         email: employer.email,
         firstName: employer.firstName,
         lastName: employer.lastName,
-        position: employer.poste,
+        poste: employer.poste,
         department: employer.department,
       }
     });

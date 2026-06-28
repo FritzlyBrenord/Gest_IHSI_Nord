@@ -16,7 +16,7 @@ interface MeetingDetails {
   title: string;
   description: string | null;
   trainer: string | null;
-  reportResponsible: { id: string; firstName: string; lastName: string; position: string; department: string } | null;
+  reportResponsible: { id: string; firstName: string; lastName: string; poste: string; department: string } | null;
   startAt: string;
   durationMins: number;
   type: string;
@@ -28,7 +28,7 @@ interface MeetingDetails {
   participants: Array<{
     id: string;
     wasPresent: boolean;
-    employee: { id: string; firstName: string; lastName: string; position: string; department: string };
+    employee: { id: string; firstName: string; lastName: string; poste: string; department: string };
   }>;
   reports: Array<{
     id: string;
@@ -224,7 +224,7 @@ export default function MeetingDetailsPage({ params }: { params: Promise<{ id: s
                     <FileText className="w-4 h-4" /> Responsable du rapport
                   </h3>
                   <p className="text-sm text-blue-900">
-                    {meeting.reportResponsible.firstName} {meeting.reportResponsible.lastName} - {meeting.reportResponsible.position}
+                    {meeting.reportResponsible.firstName} {meeting.reportResponsible.lastName} - {meeting.reportResponsible.poste}
                   </p>
                 </div>
               )}
@@ -252,7 +252,7 @@ export default function MeetingDetailsPage({ params }: { params: Promise<{ id: s
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{p.employee.firstName} {p.employee.lastName}</p>
-                        <p className="text-xs text-muted-foreground truncate">{p.employee.position}</p>
+                        <p className="text-xs text-muted-foreground truncate">{p.employee.poste}</p>
                       </div>
                     </div>
                     {meeting.status === 'TERMINEE' && (

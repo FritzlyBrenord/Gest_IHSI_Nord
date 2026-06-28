@@ -20,28 +20,18 @@ export async function GET() {
     const teamIds = teams.map(t => t.id);
     const teamNames = new Map(teams.map(t => [t.id, t.name]));
 
-    // Get objectives that have tasks assigned to these teams
+    // Get objectives
     const objectives = await prisma.objective.findMany({
-      where: {
-        plans: {
-          some: {
-            tasks: {
-              some: {
-                responsibleType: 'equipe',
-                teamId: { in: teamIds }
-              }
-            }
-          }
-        }
-      },
       orderBy: { createdAt: 'desc' }
     });
 
     // Flatten objectives into incoming tasks format
     const incomingTasks = objectives.flatMap(objective => {
-      return objective.plans.flatMap(plan => {
-        return plan.tasks
-          .filter(task => task.responsibleType === 'equipe' && teamIds.has(task.teamId))
+      const plans = (objective.plans as any[]) || [];
+      return plans.flatMap(plan => {
+        const tasks = (plan.objectives || plan.tasks || []) as any[];
+        return tasks
+          .filter(task => task.responsibleType === 'equipe' && teamIds.includes(task.teamId))
           .map(task => ({
             id: `${objective.id}:${plan.id}:${task.id}`,
             teamId: task.teamId,
@@ -56,7 +46,7 @@ export async function GET() {
             objectiveId: objective.id,
             objectiveTitle: objective.title,
             planId: plan.id,
-            planName: plan.name,
+            planName: plan.name || 'Plan',
             taskId: task.id,
             responsibleType: task.responsibleType,
             department: task.department || '',

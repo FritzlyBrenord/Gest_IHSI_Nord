@@ -50,7 +50,7 @@ export async function GET() {
           id: utilisateur.employer.id,
           firstName: utilisateur.employer.firstName,
           lastName: utilisateur.employer.lastName,
-          position: utilisateur.employer.poste,
+          poste: utilisateur.employer.poste,
           department: utilisateur.employer.department,
           email: utilisateur.employer.email,
           isActive: utilisateur.employer.isActive,

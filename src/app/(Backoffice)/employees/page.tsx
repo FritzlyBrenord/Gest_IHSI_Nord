@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useEffect, useState, useCallback, useRef, useTransition } from 'react';
+import { useEffect, useState, useRef, useTransition } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -57,7 +57,7 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 import { fetchJsonOrThrow } from '@/lib/fetch-json';
 import { validateEmployeeInput } from '@/lib/employee-validation';
-import { allPositions, departments, positionsByDepartment } from '@/components/data/data';
+import { allpostes, departments, postesByDepartment } from '@/components/data/data';
 import { buildOfficialHeaderHtml } from '@/components/documents/official-header';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -68,7 +68,7 @@ interface Employee {
   lastName: string;
   email: string;
   phone: string | null;
-  position: string;
+  poste: string;
   department: string;
   hireDate: string | null;
   photoUrl: string | null;
@@ -218,7 +218,7 @@ function PrintableEmployeeList({ employees }: { employees: Employee[] }) {
                 <td style={{ padding: '6px 8px', fontWeight: 600 }}>{emp.lastName}</td>
                 <td style={{ padding: '6px 8px', color: '#6b7280' }}>{emp.email}</td>
                 <td style={{ padding: '6px 8px', color: '#6b7280' }}>{emp.phone || '—'}</td>
-                <td style={{ padding: '6px 8px' }}>{emp.position}</td>
+                <td style={{ padding: '6px 8px' }}>{emp.poste}</td>
                 <td style={{ padding: '6px 8px' }}>{emp.department}</td>
                 <td style={{ padding: '6px 8px', color: '#6b7280' }}>{formatDate(emp.hireDate)}</td>
                 <td style={{ padding: '6px 8px' }}>
@@ -273,7 +273,7 @@ function PrintableEmployeeDossier({ employee }: { employee: Employee }) {
           {/* Info grid */}
           <div style={{ flex: 1 }}>
             <p style={{ fontSize: 18, fontWeight: 700, marginBottom: 2 }}>{employee.firstName} {employee.lastName}</p>
-            <p style={{ fontSize: 12, color: '#15803d', marginBottom: 12 }}>{employee.position} — {employee.department}</p>
+            <p style={{ fontSize: 12, color: '#15803d', marginBottom: 12 }}>{employee.poste} — {employee.department}</p>
 
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               {[
@@ -332,6 +332,7 @@ export default function EmployeesPage() {
 
   // Filters
   const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
@@ -341,7 +342,7 @@ export default function EmployeesPage() {
   const [editEmployee, setEditEmployee] = useState<Employee | null>(null);
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', email: '', phone: '+509',
-    position: '', department: '', hireDate: '', isAdmin: false,
+    poste: '', department: '', hireDate: '', isAdmin: false,
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -354,7 +355,8 @@ export default function EmployeesPage() {
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
 
-  const fetchEmployees = useCallback(async (silent = false) => {
+  // Fonction fetch simple (pas useCallback) appelée dans handleSubmit
+  async function fetchEmployees(silent = false) {
     if (!silent) setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -370,31 +372,52 @@ export default function EmployeesPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, departmentFilter, statusFilter]);
+  }
 
+  // Un seul useEffect pour le fetch avec cancelled flag
   useEffect(() => {
     let cancelled = false;
-    const controller = new AbortController();
-    setLoading(true);
-    (async () => {
+    
+    const fetchData = async () => {
+      setLoading(true);
       try {
         const params = new URLSearchParams({
           page: page.toString(), limit: '10',
           search, department: departmentFilter, status: statusFilter,
         });
         const data = await fetchJsonOrThrow<EmployeesResponse>(`/api/employees?${params}`);
-        if (cancelled) return;
-        setEmployees(data.employees || []);
-        setTotalPages(data.pagination?.totalPages || 1);
-        setTotal(data.pagination?.total || 0);
-      } catch {
-        if (!cancelled) toast.error('Erreur de chargement des employés');
+        if (!cancelled) {
+          setEmployees(data.employees || []);
+          setTotalPages(data.pagination?.totalPages || 1);
+          setTotal(data.pagination?.total || 0);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          toast.error(error instanceof Error ? error.message : 'Erreur de chargement des employés');
+        }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
-    })();
-    return () => { cancelled = true; controller.abort(); };
+    };
+
+    fetchData();
+
+    return () => {
+      cancelled = true;
+    };
   }, [page, search, departmentFilter, statusFilter]);
+
+  // Debounce: searchInput → search avec 350ms
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput);
+      setPage(1);
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   // Print dossier — trigger after state update
   useEffect(() => {
@@ -410,7 +433,7 @@ export default function EmployeesPage() {
 
   const openCreateDialog = () => {
     setEditEmployee(null);
-    setFormData({ firstName: '', lastName: '', email: '', phone: '+509', position: '', department: '', hireDate: '', isAdmin: false });
+    setFormData({ firstName: '', lastName: '', email: '', phone: '+509', poste: '', department: '', hireDate: '', isAdmin: false });
     setDialogOpen(true);
   };
 
@@ -419,7 +442,7 @@ export default function EmployeesPage() {
     setFormData({
       firstName: emp.firstName, lastName: emp.lastName,
       email: emp.email, phone: emp.phone || '+509',
-      position: emp.position, department: emp.department,
+      poste: emp.poste, department: emp.department,
       hireDate: toDateInput(emp.hireDate), isAdmin: Boolean(emp.isAdmin),
     });
     setDialogOpen(true);
@@ -441,7 +464,7 @@ export default function EmployeesPage() {
         lastName: formData.lastName,
         email: formData.email,
         phone: formData.phone || null,
-        position: formData.position,
+        poste: formData.poste,
         department: formData.department,
         hireDate: formData.hireDate || null,
         photoUrl: null,
@@ -515,7 +538,7 @@ export default function EmployeesPage() {
         body: JSON.stringify({
           firstName: employee.firstName, lastName: employee.lastName,
           email: employee.email, phone: employee.phone,
-          position: employee.position, department: employee.department,
+          poste: employee.poste, department: employee.department,
           hireDate: toDateInput(employee.hireDate),
           isAdmin: employee.isAdmin, isActive,
         }),
@@ -535,7 +558,7 @@ export default function EmployeesPage() {
   const exportCSV = () => {
     const headers = 'Prénom,Nom,Email,Poste,Département,Statut,Date embauche\n';
     const rows = employees.map(e =>
-      `${e.firstName},${e.lastName},${e.email},${e.position},${e.department},${e.isActive ? 'Actif' : 'Inactif'},${formatDate(e.hireDate)}`
+      `${e.firstName},${e.lastName},${e.email},${e.poste},${e.department},${e.isActive ? 'Actif' : 'Inactif'},${formatDate(e.hireDate)}`
     ).join('\n');
     const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -549,9 +572,9 @@ export default function EmployeesPage() {
 
   const activeCount = employees.filter(e => e.isActive).length;
   const inactiveCount = employees.filter(e => !e.isActive).length;
-  const availablePositions = formData.department
-    ? (positionsByDepartment[formData.department] ?? allPositions)
-    : allPositions;
+  const availablepostes = formData.department
+    ? (postesByDepartment[formData.department] ?? allpostes)
+    : allpostes;
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -638,8 +661,8 @@ export default function EmployeesPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                 <Input
                   placeholder="Rechercher par nom, poste…"
-                  value={search}
-                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                  value={searchInput}
+                  onChange={(e) => { setSearchInput(e.target.value); }}
                   className="pl-9 h-9"
                 />
               </div>
@@ -732,7 +755,7 @@ export default function EmployeesPage() {
                               <p className="font-medium text-sm leading-tight group-hover:text-emerald-700 transition-colors">
                                 {emp.firstName} {emp.lastName}
                               </p>
-                              <p className="text-xs text-muted-foreground mt-0.5 md:hidden">{emp.position}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5 md:hidden">{emp.poste}</p>
                             </div>
                           </Link>
                         </TableCell>
@@ -741,7 +764,7 @@ export default function EmployeesPage() {
                         <TableCell className="text-sm text-muted-foreground py-3 hidden lg:table-cell">{emp.email}</TableCell>
 
                         {/* Poste */}
-                        <TableCell className="hidden md:table-cell text-sm py-3">{emp.position}</TableCell>
+                        <TableCell className="hidden md:table-cell text-sm py-3">{emp.poste}</TableCell>
 
                         {/* Département */}
                         <TableCell className="hidden sm:table-cell py-3">
@@ -880,7 +903,7 @@ export default function EmployeesPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium">Département <span className="text-destructive">*</span></Label>
-                <Select value={formData.department} onValueChange={(v) => setFormData({ ...formData, department: v, position: '' })}>
+                <Select value={formData.department} onValueChange={(v) => setFormData({ ...formData, department: v, poste: '' })}>
                   <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Choisir…" /></SelectTrigger>
                   <SelectContent>
                     {departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
@@ -889,10 +912,10 @@ export default function EmployeesPage() {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium">Poste <span className="text-destructive">*</span></Label>
-                <Select value={formData.position} onValueChange={(v) => setFormData({ ...formData, position: v })} disabled={!formData.department}>
+                <Select value={formData.poste} onValueChange={(v) => setFormData({ ...formData, poste: v })} disabled={!formData.department}>
                   <SelectTrigger className="h-9 text-sm"><SelectValue placeholder={formData.department ? 'Choisir…' : 'Dept. d\'abord'} /></SelectTrigger>
                   <SelectContent>
-                    {availablePositions.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                    {availablepostes.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

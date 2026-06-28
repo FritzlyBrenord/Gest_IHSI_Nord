@@ -17,7 +17,7 @@ interface Participant {
   employeeId: string;
   wasPresent: boolean;
   attendanceMode: AttendanceMode;
-  employee: { id: string; firstName: string; lastName: string; position: string; photoUrl: string | null };
+  employee: { id: string; firstName: string; lastName: string; poste: string; photoUrl: string | null };
 }
 
 interface MeetingInfo {
@@ -148,7 +148,7 @@ export default function MeetingAttendancePage({ params }: { params: Promise<{ id
     if (!meeting) return;
     const headers = 'Nom,Prénom,Poste,Présentiel,En ligne,Statut\n';
     const rows = meeting.participants.map(p =>
-      `${p.employee.lastName},${p.employee.firstName},${p.employee.position},${participantStates[p.id] === 'PRESENTIEL' ? 'Oui' : 'Non'},${participantStates[p.id] === 'EN_LIGNE' ? 'Oui' : 'Non'},${attendanceLabel(fromAttendanceSelection(participantStates[p.id] ?? 'ABSENT'))}`
+      `${p.employee.lastName},${p.employee.firstName},${p.employee.poste},${participantStates[p.id] === 'PRESENTIEL' ? 'Oui' : 'Non'},${participantStates[p.id] === 'EN_LIGNE' ? 'Oui' : 'Non'},${attendanceLabel(fromAttendanceSelection(participantStates[p.id] ?? 'ABSENT'))}`
     ).join('\n');
     const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -242,7 +242,7 @@ export default function MeetingAttendancePage({ params }: { params: Promise<{ id
                     </Avatar>
                     <div>
                       <p className="text-sm font-medium">{p.employee.firstName} {p.employee.lastName}</p>
-                      <p className="text-xs text-muted-foreground">{p.employee.position}</p>
+                      <p className="text-xs text-muted-foreground">{p.employee.poste}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">

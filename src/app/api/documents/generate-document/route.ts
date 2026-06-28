@@ -11,8 +11,10 @@ export async function POST(request: Request) {
     }
 
     const baseInstruction =
-      "Vous êtes un expert en rédaction de documents administratifs professionnels en français. " +
-      "Votre texte doit être formel, précis et bien structuré. " +
+      "Vous rédigez un document officiel pour l'Institut Haïtien de " +
+      "Statistique et d'Informatique (IHSI), Direction Nord. " +
+      "Le ton doit être formel, institutionnel, sobre et précis, " +
+      "conforme aux standards de l'administration publique haïtienne. " +
       "Ne retournez QUE le texte demandé, sans commentaires et sans balises markdown de code (```).";
 
     // -------------------------------------------------------
@@ -130,20 +132,42 @@ export async function POST(request: Request) {
           : "Non spécifié";
 
       const prompt =
-        `Rédigez un compte rendu professionnel de type "${variant}".\n\n` +
-        `Titre fourni par l'utilisateur : ${title}\n` +
-        `Contexte : ${description}\n` +
-        `Nombre de pages : ${pageCount || 1} (Maximum 2 pages, idéalement 1 seule page)\n` +
-        `Points à traiter :\n${kpList}\n\n` +
-        `ATTENTION - STRUCTURE DE RÉPONSE EXIGÉE :\n` +
-        `:::TITLE:::\n[Générez un titre amélioré, très professionnel et impactant basé sur la demande]\n` +
-        `:::CONTENT:::\n[Générez le corps du document ici]\n\n` +
-        `Structure OBLIGATOIRE pour le :::CONTENT::: (Markdown) :\n` +
-        `**Participants :**\n- ...\n\n` +
-        `## 1. [Section]\n[contenu concis et direct]\n\n` +
-        `## 2. [Section]\n[contenu concis et direct]\n\n` +
-        `...etc\n\n` +
-        `Le ton doit être institutionnel, formel, simple, précis et très clair. Ne dites pas de choses inutiles, allez à l'essentiel.`;
+        `Vous rédigez un document officiel pour l'Institut Haïtien de ` +
+        `Statistique et d'Informatique (IHSI), Direction Nord. ` +
+        `Le ton doit être formel, institutionnel, sobre et précis, ` +
+        `conforme aux standards de l'administration publique haïtienne.\n\n` +
+        `Rédigez un compte rendu professionnel complet de type '${variant}'.\n\n` +
+        `INFORMATIONS FOURNIES :\n` +
+        `- Titre : ${title}\n` +
+        `- Contexte : ${description}\n` +
+        `- Points à traiter obligatoirement :\n${kpList}\n\n` +
+        `CONTRAINTE IMPORTANTE : Le contenu doit tenir sur UNE SEULE PAGE (format 8.5 x 11). ` +
+        `Soyez extrêmement concis, direct et précis.\n\n` +
+        `STRUCTURE OBLIGATOIRE EN MARKDOWN (respectez EXACTEMENT cet ordre) :\n\n` +
+        `:::TITLE:::\n[Titre officiel du document]\n` +
+        `:::CONTENT:::\n\n` +
+        `## Contexte et objectifs\n` +
+        `[Maximum 25 mots. Expliquez brièvement le contexte et les objectifs.]\n\n` +
+        `## Déroulement\n` +
+        `[Maximum 30 mots par point. Pour chaque point, rédigez un paragraphe très concis.]\n\n` +
+        `## Résultats et acquis\n` +
+        `[Maximum 25 mots. Synthèse très rapide des décisions.]\n\n` +
+        `## Recommandations et perspectives\n` +
+        `[Maximum 20 mots. Actions principales à entreprendre.]\n\n` +
+        `## Conclusion\n` +
+        `[Maximum 15 mots. Clôture formelle.]\n\n` +
+        `INTERDICTIONS ABSOLUES :\n` +
+        `- N'utilisez jamais d'expressions familières ou informelles.\n` +
+        `- Ne répétez jamais les informations déjà données.\n` +
+        `- N'inventez aucun chiffre, statistique ou nom de personne.\n` +
+        `- N'ajoutez aucune balise markdown de code.\n` +
+        `- Ne mettez pas de texte entre crochets comme [contenu ici].\n` +
+        `- Ne laissez aucune section vide ou avec du texte de remplacement.\n` +
+        `- N'ajoutez PAS de tableau de participants.\n` +
+        `- N'utilisez PAS le délimiteur ---PAGE---.\n` +
+        `- N'utilisez JAMAIS de lignes horizontales (---, ***, ___, ou tout autre tiret).\n` +
+        `- N'utilisez JAMAIS de bordures sous les titres.\n` +
+        `- Respectez strictement les limites de mots pour tenir sur une seule page.`;
 
       const result = await processAiResponse(prompt, title);
       return NextResponse.json(result);
@@ -163,29 +187,55 @@ export async function POST(request: Request) {
           : "Aucun point spécifique fourni";
 
       const prompt =
-        `Rédigez un rapport professionnel complet de type "${variant}".\n\n` +
-        `Titre fourni par l'utilisateur : ${title}\n` +
-        `Description : ${description}\n` +
-        `Grands points à traiter obligatoirement :\n${kpList}\n\n` +
-        `Nombre de pages : ${pageCount || 5}\n\n` +
-        `ATTENTION - STRUCTURE DE RÉPONSE EXIGÉE :\n` +
-        `:::TITLE:::\n[Générez un titre amélioré, très professionnel et impactant basé sur la demande]\n` +
-        `:::CONTENT:::\n[Générez le corps du document ici]\n\n` +
-        `RÈGLE ABSOLUE POUR LA PAGINATION ET LA STRUCTURE DU :::CONTENT::: :\n` +
-        `1. Vous devez IMPÉRATIVEMENT utiliser le délimiteur ---PAGE--- (seul sur une ligne) pour forcer les sauts de page selon la structure suivante.\n` +
-        `2. N'insérez JAMAIS de lignes horizontales (comme "---", "***", ou "___") dans le corps de votre texte. Utilisez UNIQUEMENT "---PAGE---" pour séparer.\n\n` +
-        `Structure OBLIGATOIRE (Markdown) :\n` +
-        `## Sommaire\n1. Introduction\n2. ...\nN. Conclusion\n\n` +
+        `Vous rédigez un document officiel pour l'Institut Haïtien de ` +
+        `Statistique et d'Informatique (IHSI), Direction Nord.\n` +
+        `Le ton doit être formel, analytique et précis, conforme aux ` +
+        `standards de l'administration publique haïtienne.\n\n` +
+        `Rédigez un rapport professionnel complet de type '${variant}'.\n\n` +
+        `INFORMATIONS FOURNIES :\n` +
+        `- Titre : ${title}\n` +
+        `- Description : ${description}\n` +
+        `- Nombre de pages cible : ${pageCount || 5}\n` +
+        `- Points à traiter obligatoirement :\n${kpList}\n\n` +
+        `RÈGLE DE PAGINATION :\n` +
+        `Utilisez UNIQUEMENT ---PAGE--- (seul sur une ligne) pour séparer ` +
+        `les pages. N'utilisez JAMAIS --- seul comme séparateur ou décoration.\n\n` +
+        `STRUCTURE OBLIGATOIRE EN MARKDOWN :\n\n` +
+        `:::TITLE:::\n[Titre officiel du rapport]\n` +
+        `:::CONTENT:::\n\n` +
+        `## Sommaire\n` +
+        `1. Introduction\n` +
+        `2. [Sections selon les points fournis]\n` +
+        `N. Conclusion\n` +
+        `[Éventuellement : Annexes]\n\n` +
         `---PAGE---\n\n` +
-        `## 1. Introduction\n[contenu de l'introduction sur une page unique]\n\n` +
+        `## 1. Introduction\n` +
+        `[Minimum 120 mots. Contexte général, raison d'être du rapport, ` +
+        `portée et limites, méthodologie utilisée. Rédigez en prose, ` +
+        `à la 3e personne institutionnelle.]\n\n` +
         `---PAGE---\n\n` +
-        `## 2. [Section]\n[contenu détaillé - utilisez ---PAGE--- si le développement est très long pour passer à une autre page]\n\n` +
-        `...etc\n\n` +
+        `## 2. [Titre de la section selon les points fournis]\n` +
+        `[Minimum 150 mots par section. Développez chaque point en profondeur ` +
+        `avec des sous-sections si nécessaire. Utilisez ### pour les ` +
+        `sous-sections. Insérez ---PAGE--- si la section est très longue.]\n\n` +
+        `[Répétez ce bloc pour chaque point de la liste fourni]\n\n` +
         `---PAGE---\n\n` +
-        `## Conclusion\n[contenu de la conclusion sur une page unique]\n\n` +
+        `## Conclusion\n` +
+        `[Minimum 100 mots. Synthèse des points traités, appréciation ` +
+        `générale, impact attendu, recommandations finales formulées ` +
+        `de manière institutionnelle.]\n\n` +
         `---PAGE---\n\n` +
-        `## Annexes\n[s'il y a lieu, annexes sur une page unique]\n\n` +
-        `Rédigez un contenu dense, professionnel et pertinent. Développez chaque section en profondeur et respectez STRICTEMENT l'usage de ---PAGE--- pour séparer Sommaire, Introduction, Contenu, Conclusion et Annexes.`;
+        `## Annexes\n` +
+        `[Si pertinent : tableaux de données, références, textes de loi ` +
+        `cités, glossaire. Sinon, omettez cette section entièrement.]\n\n` +
+        `INTERDICTIONS ABSOLUES :\n` +
+        `- N'utilisez jamais d'expressions familières ou informelles.\n` +
+        `- Ne répétez jamais les informations déjà données.\n` +
+        `- N'inventez aucun chiffre, statistique ou nom de personne.\n` +
+        `- N'ajoutez aucune balise markdown de code.\n` +
+        `- Ne laissez aucune section vide ou avec du texte de remplacement.\n` +
+        `- N'utilisez PAS --- seul comme décoration ou séparateur visuel.\n` +
+        `- Utilisez UNIQUEMENT ---PAGE--- pour les sauts de page.`;
 
       const result = await processAiResponse(prompt, title);
       return NextResponse.json(result);

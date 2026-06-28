@@ -40,7 +40,7 @@ export interface EventParticipant {
     id: string;
     firstName: string;
     lastName: string;
-    position: string;
+    poste: string;
     department: string;
   };
 }
@@ -69,7 +69,7 @@ export interface MeetingEvent {
     id: string;
     firstName: string;
     lastName: string;
-    position: string;
+    poste: string;
     department: string;
   } | null;
   participants: EventParticipant[];
@@ -461,7 +461,7 @@ function EventCard({ meeting, visualStatus, filterByEmployeeId, allowActions, on
 
       <div className="flex flex-col gap-4 p-5 pl-6 sm:flex-row sm:items-center">
         {/* Date block */}
-        <div className="flex-shrink-0 text-center">
+        <div className="shrink-0 text-center">
           <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 w-16">
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
               {new Date(meeting.startAt).toLocaleDateString('fr-FR', { month: 'short' })}
@@ -536,7 +536,7 @@ function EventCard({ meeting, visualStatus, filterByEmployeeId, allowActions, on
         </div>
 
         {/* Right actions */}
-        <div className="flex flex-shrink-0 items-center gap-2" onClick={e => e.stopPropagation()}>
+        <div className="flex shrink-0 items-center gap-2" onClick={e => e.stopPropagation()}>
           {canCompteRendu && (
             <Button
               size="sm"
@@ -555,7 +555,7 @@ function EventCard({ meeting, visualStatus, filterByEmployeeId, allowActions, on
       {/* Échu warning */}
       {visualStatus === 'ecoule' && (
         <div className="flex items-center gap-2 border-t border-rose-100 bg-rose-50 px-6 py-2">
-          <AlertTriangle className="h-3.5 w-3.5 text-rose-500 flex-shrink-0" />
+          <AlertTriangle className="h-3.5 w-3.5 text-rose-500 shrink-0" />
           <p className="text-xs text-rose-700">
             La date prévue est dépassée et l'événement n'a pas été mis à jour.
           </p>
@@ -578,7 +578,7 @@ interface DetailProps {
 }
 
 function EventDetail({ meeting, filterByEmployeeId, allowActions, onCompteRendu, onBack, docViewerPath = '/executant/doc-viewer', currentPath = '/evenements' }: DetailProps) {
-  const [activeTab, setActiveTab] = useState<'info' | 'participants' | 'documents'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'participants' | 'documents' | 'reports'>('info');
   const visualStatus = computeVisualStatus(meeting);
   const cfg = VISUAL_STATUS_CONFIG[visualStatus];
   const catCfg = CATEGORY_CONFIG[meeting.category];
@@ -640,7 +640,7 @@ function EventDetail({ meeting, filterByEmployeeId, allowActions, onCompteRendu,
 
           {canCompteRendu && (
             <Button
-              className={`rounded-xl shadow-sm flex-shrink-0 ${isReportValid ? 'bg-slate-100 text-slate-500 cursor-not-allowed hover:bg-slate-100 border' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+              className={`rounded-xl shadow-sm shrink-0 ${isReportValid ? 'bg-slate-100 text-slate-500 cursor-not-allowed hover:bg-slate-100 border' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
               onClick={() => { if (!isReportValid) onCompteRendu?.(meeting) }}
               disabled={isReportValid}
             >
@@ -653,7 +653,7 @@ function EventDetail({ meeting, filterByEmployeeId, allowActions, onCompteRendu,
         {/* Échu warning */}
         {visualStatus === 'ecoule' && (
           <div className="mt-4 flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4">
-            <AlertTriangle className="h-5 w-5 text-rose-500 flex-shrink-0 mt-0.5" />
+            <AlertTriangle className="h-5 w-5 text-rose-500 shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-semibold text-rose-800">Événement échu</p>
               <p className="text-xs text-rose-700 mt-0.5">
@@ -726,7 +726,7 @@ function EventDetail({ meeting, filterByEmployeeId, allowActions, onCompteRendu,
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700 hover:bg-blue-100 transition-colors"
               >
-                <ExternalLink className="h-3.5 w-3.5 flex-shrink-0" />
+                <ExternalLink className="h-3.5 w-3.5 shrink-0" />
                 <span className="truncate">{meeting.meetingUrl}</span>
               </a>
             )}
@@ -765,7 +765,7 @@ function EventDetail({ meeting, filterByEmployeeId, allowActions, onCompteRendu,
                     {isReporter && <span className="ml-2 text-xs font-normal text-blue-600">(vous)</span>}
                   </p>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    {meeting.reportResponsible.position} • {meeting.reportResponsible.department}
+                    {meeting.reportResponsible.poste} • {meeting.reportResponsible.department}
                   </p>
                 </div>
               </div>
@@ -807,17 +807,17 @@ function EventDetail({ meeting, filterByEmployeeId, allowActions, onCompteRendu,
                     : 'border-slate-100 bg-slate-50'
                 }`}
               >
-                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-white font-semibold text-xs text-slate-700 shadow-sm border border-slate-200">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white font-semibold text-xs text-slate-700 shadow-sm border border-slate-200">
                   {getInitials(p.employee.firstName, p.employee.lastName)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-900 truncate">
                     {p.employee.firstName} {p.employee.lastName}
                   </p>
-                  <p className="text-xs text-slate-500 truncate">{p.employee.position}</p>
+                  <p className="text-xs text-slate-500 truncate">{p.employee.poste}</p>
                 </div>
                 {meeting.status === 'TERMINEE' && p.wasPresent && (
-                  <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-emerald-500" />
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
                 )}
               </div>
             ))}
@@ -842,7 +842,7 @@ function EventDetail({ meeting, filterByEmployeeId, allowActions, onCompteRendu,
                   key={doc.id}
                   className="flex items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 hover:border-slate-300 transition-colors"
                 >
-                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-white border border-slate-200 shadow-sm">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white border border-slate-200 shadow-sm">
                     <FileText className="h-5 w-5 text-slate-500" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -855,7 +855,7 @@ function EventDetail({ meeting, filterByEmployeeId, allowActions, onCompteRendu,
                     href={doc.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-shrink-0"
+                    className="shrink-0"
                   >
                     <Button variant="outline" size="sm" className="rounded-lg text-xs gap-1.5">
                       <Download className="h-3.5 w-3.5" />
@@ -882,12 +882,12 @@ function EventDetail({ meeting, filterByEmployeeId, allowActions, onCompteRendu,
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <FileText className="h-5 w-5 text-slate-400 flex-shrink-0" />
+                    <FileText className="h-5 w-5 text-slate-400 shrink-0" />
                     <p className="text-sm font-semibold text-slate-900 truncate" title={report.title}>
                       {report.title}
                     </p>
                   </div>
-                  <Badge variant={report.workflowStatus === 'valide' ? 'default' : report.workflowStatus === 'a_corriger' ? 'destructive' : 'secondary'} className="text-[10px] shrink-0">
+                  <Badge variant={report.workflowStatus === 'valide' ? 'default' : report.workflowStatus === 'a_corriger' ? 'destructive' : 'secondary'} className="text-[10px] flex-shrink-0">
                     {report.workflowStatus === 'valide' ? 'Validé' : report.workflowStatus === 'a_corriger' ? 'À corriger' : 'En attente'}
                   </Badge>
                 </div>

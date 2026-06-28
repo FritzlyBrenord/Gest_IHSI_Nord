@@ -20,7 +20,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       lastName: employee.lastName,
       email: employee.email,
       phone: employee.phone,
-      position: employee.poste,
+      poste: employee.poste,
       department: employee.department,
       hireDate: employee.dateEmbauche?.toISOString() || null,
       photoUrl: employee.utilisateur?.photoUrl || null,
@@ -49,7 +49,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const resolvedParams = await params;
     const { id } = resolvedParams;
     const body = await request.json();
-    const { firstName, lastName, email, phone, position, department, hireDate, isActive } = body;
+    const { firstName, lastName, email, phone, poste, department, hireDate, isActive } = body;
 
     const existingEmployer = await prisma.employer.findUnique({
       where: { id },
@@ -65,7 +65,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       if (emailTaken) {
         return NextResponse.json({ error: 'Cet email est déjà utilisé par un autre employé' }, { status: 400 });
       }
-    }
+    } 
 
     const updatedEmployer = await prisma.employer.update({
       where: { id },
@@ -74,7 +74,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         lastName: lastName !== undefined ? lastName : existingEmployer.lastName,
         email: email !== undefined ? email : existingEmployer.email,
         phone: phone !== undefined ? phone : existingEmployer.phone,
-        poste: position !== undefined ? position : existingEmployer.poste,
+        poste: poste !== undefined ? poste : existingEmployer.poste,
         department: department !== undefined ? department : existingEmployer.department,
         dateEmbauche: hireDate !== undefined ? (hireDate ? new Date(hireDate) : null) : existingEmployer.dateEmbauche,
         isActive: isActive !== undefined ? isActive : existingEmployer.isActive,
@@ -91,7 +91,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       lastName: updatedEmployer.lastName,
       email: updatedEmployer.email,
       phone: updatedEmployer.phone,
-      position: updatedEmployer.poste,
+      poste: updatedEmployer.poste,
       department: updatedEmployer.department,
       hireDate: updatedEmployer.dateEmbauche?.toISOString() || null,
       photoUrl: updatedUtilisateur?.photoUrl || null,

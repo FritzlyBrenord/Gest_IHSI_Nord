@@ -19,7 +19,7 @@ interface Employee {
   id: string;
   firstName: string;
   lastName: string;
-  position: string;
+  poste: string;
   department: string;
 }
 
@@ -355,7 +355,7 @@ export default function NewMeetingPage() {
                       <SelectItem value="none">Aucun pour le moment</SelectItem>
                       {employees.map((emp) => (
                         <SelectItem key={emp.id} value={emp.id}>
-                          {emp.firstName} {emp.lastName} - {emp.position}
+                          {emp.firstName} {emp.lastName} - {emp.poste}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -469,7 +469,7 @@ export default function NewMeetingPage() {
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="truncate text-sm font-medium">{emp.firstName} {emp.lastName}</p>
-                              <p className="truncate text-xs text-muted-foreground">{emp.position} · {emp.department}</p>
+                              <p className="truncate text-xs text-muted-foreground">{emp.poste} · {emp.department}</p>
                             </div>
                           </div>
                         ))}

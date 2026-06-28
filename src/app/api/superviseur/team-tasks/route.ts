@@ -64,7 +64,7 @@ export async function GET() {
           firstName: t.assignedEmployee.firstName,
           lastName: t.assignedEmployee.lastName,
           email: t.assignedEmployee.email,
-          position: t.assignedEmployee.poste,
+          poste: t.assignedEmployee.poste,
           department: t.assignedEmployee.department,
           isActive: t.assignedEmployee.isActive
         }
@@ -151,7 +151,7 @@ export async function POST(req: Request) {
           firstName: task.assignedEmployee.firstName,
           lastName: task.assignedEmployee.lastName,
           email: task.assignedEmployee.email,
-          position: task.assignedEmployee.poste,
+          poste: task.assignedEmployee.poste,
           department: task.assignedEmployee.department,
           isActive: task.assignedEmployee.isActive
         }

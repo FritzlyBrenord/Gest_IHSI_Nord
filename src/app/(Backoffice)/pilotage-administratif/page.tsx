@@ -15,7 +15,7 @@ type Employee = {
   lastName: string;
   email: string;
   phone?: string | null;
-  position: string;
+  poste: string;
   department: string;
   hireDate?: string | null;
   photoUrl?: string | null;
@@ -44,7 +44,7 @@ type Meeting = {
     id: string;
     firstName: string;
     lastName: string;
-    position: string;
+    poste: string;
     department: string;
   } | null;
   participants?: Array<{
@@ -56,7 +56,7 @@ type Meeting = {
       id: string;
       firstName: string;
       lastName: string;
-      position: string;
+      poste: string;
     };
   }>;
   trainingDocuments?: Array<{ id: string }>;
@@ -100,6 +100,7 @@ type DashboardStats = {
 type DashboardDataState = {
   employeesAvailable: boolean;
   meetingsAvailable: boolean;
+  objectivesAvailable: boolean;
   message: string | null;
 };
 
@@ -177,14 +178,16 @@ function getCurrentWeekObjectiveCount(objective: Objective, now: Date) {
   const weekStart = startOfWeek(now);
   const weekEnd = endOfWeek(now);
 
-  return objective.plans.reduce((total, plan) => {
+  const plans = objective.plans as any[] || [];
+  return plans.reduce((total, plan) => {
     const planStart = new Date(`${plan.startsAt}T00:00:00`);
     const planEnd = new Date(`${plan.endsAt}T23:59:59`);
     const overlapsCurrentWeek = planEnd >= weekStart && planStart <= weekEnd;
 
     if (!overlapsCurrentWeek) return total;
 
-    return total + plan.tasks.filter((task: any) => task.title.trim()).length;
+    const tasks = plan.tasks as any[] || [];
+    return total + tasks.filter((task: any) => task.title?.trim()).length;
   }, 0);
 }
 
@@ -194,13 +197,15 @@ function summarizeObjectiveStatuses(objectives: Objective[], now: Date) {
   const weekEnd = endOfWeek(now);
 
   for (const objective of objectives) {
-    for (const plan of objective.plans) {
+    const plans = objective.plans as any[] || [];
+    for (const plan of plans) {
       const planStart = new Date(`${plan.startsAt}T00:00:00`);
       const planEnd = new Date(`${plan.endsAt}T23:59:59`);
       if (planEnd < weekStart || planStart > weekEnd) continue;
 
-      for (const task of plan.tasks) {
-        if (!task.title.trim()) continue;
+      const tasks = plan.tasks as any[] || [];
+      for (const task of tasks) {
+        if (!task.title?.trim()) continue;
         const key = task.status as WeeklyObjectiveStatus;
         summary.set(key, (summary.get(key) || 0) + 1);
       }
@@ -352,6 +357,7 @@ export default function AdminDashboardPage() {
   const [dataState, setDataState] = useState<DashboardDataState>({
     employeesAvailable: false,
     meetingsAvailable: false,
+    objectivesAvailable: false,
     message: null,
   });
   const [loading, setLoading] = useState(true);
@@ -412,6 +418,7 @@ export default function AdminDashboardPage() {
         setDataState({
           employeesAvailable,
           meetingsAvailable,
+          objectivesAvailable,
           message: failedReasons[0] || null,
         });
       } catch (error) {
@@ -419,6 +426,7 @@ export default function AdminDashboardPage() {
         setDataState({
           employeesAvailable: false,
           meetingsAvailable: false,
+          objectivesAvailable: false,
           message: error instanceof Error ? error.message : 'Impossible de charger les données du tableau de bord.',
         });
       } finally {
@@ -444,7 +452,7 @@ export default function AdminDashboardPage() {
       subtitle: `${stats?.objectivesThisWeek ?? 0} objectif(s) sur la semaine`,
       icon: Target,
       accentClassName: 'bg-amber-50 text-amber-700',
-      available: dataState.meetingsAvailable,
+      available: dataState.objectivesAvailable,
     },
     {
       title: 'Formations prévues',
@@ -462,7 +470,7 @@ export default function AdminDashboardPage() {
       accentClassName: 'bg-orange-50 text-orange-700',
       available: dataState.meetingsAvailable,
     },
-  ]), [stats, dataState.employeesAvailable, dataState.meetingsAvailable]);
+  ]), [stats, dataState.employeesAvailable, dataState.meetingsAvailable, dataState.objectivesAvailable]);
 
   const currentWeekObjectiveCount = useMemo(
     () => highlights.latestWeeklyObjective ? getCurrentWeekObjectiveCount(highlights.latestWeeklyObjective, new Date()) : 0,
@@ -496,11 +504,11 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-6 p-4 md:p-6">
-      {dataState.message ? (
+      {dataState.message && !dataState.employeesAvailable && !dataState.meetingsAvailable ? (
         <Card className="border-amber-200 bg-amber-50/70">
           <CardContent className="p-4">
             <p className="text-sm font-medium text-amber-900">
-              Service de base de données indisponible. Les données ne peuvent pas être chargées pour le moment.
+              {dataState.message}
             </p>
           </CardContent>
         </Card>

@@ -1,6 +1,6 @@
 export const departments = ['Administration', 'Informatique', 'Statistique', 'Logistique', 'Menagere'];
 
-export const positionsByDepartment: Record<string, string[]> = {
+export const postesByDepartment: Record<string, string[]> = {
   Administration: [
     'Directeur Général',
     'Directeur Adjoint',
@@ -46,7 +46,7 @@ export const positionsByDepartment: Record<string, string[]> = {
   ],
 };
 
-export const allPositions = [
+export const allpostes = [
   'Directeur Général',
   'Directeur Adjoint',
   'Responsable RH',

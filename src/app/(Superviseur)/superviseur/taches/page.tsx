@@ -463,7 +463,7 @@ export default function SuperviseurTachesPage() {
                   <SelectContent>
                     {getEligibleMembers(shareModal.task).map((member) => (
                       <SelectItem key={member.id} value={member.id}>
-                        {member.firstName} {member.lastName} - {member.position}
+                        {member.firstName} {member.lastName} - {member.poste}
                       </SelectItem>
                     ))}
                   </SelectContent>

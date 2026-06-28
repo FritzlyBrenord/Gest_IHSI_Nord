@@ -37,7 +37,7 @@ export async function GET() {
         firstName: team.superviseur.firstName,
         lastName: team.superviseur.lastName,
         email: team.superviseur.email,
-        position: team.superviseur.poste,
+        poste: team.superviseur.poste,
         department: team.superviseur.department,
         isActive: team.superviseur.isActive,
       },
@@ -46,7 +46,7 @@ export async function GET() {
         firstName: m.employer.firstName,
         lastName: m.employer.lastName,
         email: m.employer.email,
-        position: m.employer.poste,
+        poste: m.employer.poste,
         department: m.employer.department,
         isActive: m.employer.isActive,
       }))

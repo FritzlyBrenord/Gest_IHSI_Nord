@@ -33,7 +33,7 @@ interface Participant {
   employeeId: string;
   wasPresent: boolean;
   attendanceMode: 'PRESENTIEL' | 'EN_LIGNE' | null;
-  employee: { id: string; firstName: string; lastName: string; position: string; photoUrl: string | null };
+  employee: { id: string; firstName: string; lastName: string; poste: string; photoUrl: string | null };
 }
 
 interface Meeting {
@@ -41,7 +41,7 @@ interface Meeting {
   category: string;
   title: string;
   description: string | null;
-  reportResponsible?: { firstName: string; lastName: string; position: string } | null;
+  reportResponsible?: { firstName: string; lastName: string; poste: string } | null;
   startAt: string;
   durationMins: number;
   type: string;
@@ -134,7 +134,7 @@ function matchesSearch(meeting: Meeting, search: string) {
     typeLabels[meeting.type] || meeting.type,
     statusLabels[meeting.status] || meeting.status,
     meeting.reportResponsible
-      ? `${meeting.reportResponsible.firstName} ${meeting.reportResponsible.lastName} ${meeting.reportResponsible.position}`
+      ? `${meeting.reportResponsible.firstName} ${meeting.reportResponsible.lastName} ${meeting.reportResponsible.poste}`
       : '',
     new Date(meeting.startAt).toLocaleDateString('fr-FR'),
     new Date(meeting.startAt).toLocaleString('fr-FR'),

@@ -31,8 +31,10 @@ export async function GET(
     const personIds = new Set<string>();
     const teamIds = new Set<string>();
 
-    objective.plans?.forEach((plan: any) => {
-      plan.tasks?.forEach((task: any) => {
+    const plans = objective.plans as any[] || [];
+    plans.forEach((plan: any) => {
+      const tasks = plan.tasks as any[] || [];
+      tasks.forEach((task: any) => {
         if (task.personId) personIds.add(task.personId);
         if (task.teamId) teamIds.add(task.teamId);
       });
@@ -59,9 +61,9 @@ export async function GET(
     // Add resolved names to tasks
     const formattedObjective = {
       ...objective,
-      plans: objective.plans?.map((plan: any) => ({
+      plans: plans.map((plan: any) => ({
         ...plan,
-        tasks: plan.tasks?.map((task: any) => ({
+        tasks: (plan.tasks as any[] || []).map((task: any) => ({
           ...task,
           personName: task.personId ? employeeMap.get(task.personId) || null : null,
           teamName: task.teamId ? teamMap.get(task.teamId) || null : null,
