@@ -10,11 +10,12 @@ const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'training-docum
 // GET - Récupérer un document de formation
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const document = await prisma.trainingDocument.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!document) {
@@ -31,14 +32,15 @@ export async function GET(
 // PUT - Mettre à jour un document de formation
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await req.json();
     const { name, url } = body;
 
     const document = await prisma.trainingDocument.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!document) {
@@ -59,7 +61,7 @@ export async function PUT(
     }
 
     const updatedDocument = await prisma.trainingDocument.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(name && { name }),
         ...(url && { url }),
@@ -76,11 +78,12 @@ export async function PUT(
 // DELETE - Supprimer un document de formation
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const document = await prisma.trainingDocument.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!document) {
@@ -100,7 +103,7 @@ export async function DELETE(
 
     // Supprimer l'enregistrement de la base de données
     await prisma.trainingDocument.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ success: true, message: 'Document supprimé avec succès' });

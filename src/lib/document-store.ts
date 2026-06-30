@@ -4,7 +4,7 @@ type DocumentCreatePayload = Omit<DocumentItem, 'id' | 'createdAt' | 'updatedAt'
   employerId?: string;
   employer?: unknown;
 };
-
+ 
 export async function fetchDocuments(): Promise<DocumentItem[]> {
   try {
     const res = await fetch('/api/documents');

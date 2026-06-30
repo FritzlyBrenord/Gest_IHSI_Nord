@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -116,7 +116,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
             </div>
           </Link>
         ) : null}
-        <p className="mt-2 text-center text-xs text-muted-foreground">IHSI v1.0</p>
+        <p className="mt-2 text-center text-xs text-muted-foreground">I</p>
       </div>
     </div>
   );
