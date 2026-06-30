@@ -16,6 +16,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -54,6 +64,7 @@ export function DashboardView({ onNewDocument, onOpenDocument }: {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
   const { toast } = useToast();
 
   const loadDocuments = useCallback(async () => {
@@ -82,13 +93,16 @@ export function DashboardView({ onNewDocument, onOpenDocument }: {
     );
   }, [documents, search]);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async () => {
+    if (!documentToDelete) return;
     try {
-      await removeDocument(id);
+      await removeDocument(documentToDelete);
       await loadDocuments();
       toast({ title: "Document supprimé" });
     } catch (e) {
       toast({ title: "Erreur", description: "Impossible de supprimer le document", variant: "destructive" });
+    } finally {
+      setDocumentToDelete(null);
     }
   };
 
@@ -190,7 +204,9 @@ export function DashboardView({ onNewDocument, onOpenDocument }: {
                             }}><Share2 className="w-4 h-4 mr-2" />Partager</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => exportToPDF(doc, user)}><Printer className="w-4 h-4 mr-2" />Imprimer</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleDuplicate(doc.id)}><Copy className="w-4 h-4 mr-2" />Dupliquer</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDelete(doc.id)} className="text-red-600"><Trash2 className="w-4 h-4 mr-2" />Supprimer</DropdownMenuItem>
+                            {doc.employerId === authUser?.employerId && (
+                              <DropdownMenuItem onClick={() => setDocumentToDelete(doc.id)} className="text-red-600"><Trash2 className="w-4 h-4 mr-2" />Supprimer</DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
@@ -215,6 +231,23 @@ export function DashboardView({ onNewDocument, onOpenDocument }: {
           </motion.div>
         )}
       </main>
+
+      <AlertDialog open={!!documentToDelete} onOpenChange={(open) => !open && setDocumentToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer ce document ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. Cela supprimera définitivement le document et retirera l&apos;accès à toutes les personnes avec qui il a été partagé.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700 text-white">
+              Supprimer définitivement
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 }
