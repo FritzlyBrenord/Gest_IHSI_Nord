@@ -7,13 +7,14 @@ export const postesByDepartment: Record<string, string[]> = {
     'Responsable RH',
     'Assistant Administratif',
     'Secrétaire',
+      'Stagiaire',
     'Comptable',
     'Chargé de Communication',
   ],
   Informatique: [
     'Responsable DDCT',
     'Développeur Frontend',
-    'Stargiaire',
+    'Stagiaire',
     'Développeur Backend',
     'Administrateur Système',
     'Administrateur Réseau',
@@ -23,7 +24,7 @@ export const postesByDepartment: Record<string, string[]> = {
   ],
   Statistique: [
     'Statisticien',
-    'Stargiaire',
+    'Stagiaire',
     'Data Scientist',
     'Chargé d\'Études',
     'Responsable Statistique',
@@ -31,7 +32,7 @@ export const postesByDepartment: Record<string, string[]> = {
   Logistique: [
     'Responsable Logistique',
     'Agent Logistique',
-     'Stargiaire',
+     'Stagiaire',
     'Gestionnaire de Stock',
     'Chauffeur',
     'Coursier',
@@ -42,6 +43,7 @@ export const postesByDepartment: Record<string, string[]> = {
     'Femme de Ménage',
     'Jardinier',
     'Gardien',
+  'Stagiaire',
     'Cuisinier',
   ],
 };
@@ -76,6 +78,7 @@ export const allpostes = [
   'Agent d\'Entretien',
   'Femme de Ménage',
   'Jardinier',
+    'Stagiaire',
   'Gardien',
   'Cuisinier',
 ];
